@@ -368,15 +368,84 @@ function swapLangs(){
 }
 
 // ── TRANSLATE ──
+// Robust translation with timeout, retry, and fallback chain:
+// 1st: MyMemory (free, 1000 words/day per IP)
+// 2nd: LibreTranslate public mirror (free, no key)
+// 3rd: Return original text with a clear notice
+
+var LIBRE_MIRRORS = [
+  'https://libretranslate.com',
+  'https://translate.argosopentech.com',
+  'https://translate.terraprint.co'
+];
+
+function fetchWithTimeout(url,opts,ms){
+  var ctrl=new AbortController();
+  var timer=setTimeout(function(){ctrl.abort();},ms||8000);
+  return fetch(url,Object.assign({},opts,{signal:ctrl.signal}))
+    .finally(function(){clearTimeout(timer);});
+}
+
+async function tryMyMemory(text,f,t){
+  var url='https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair='+f+'|'+t;
+  var r=await fetchWithTimeout(url,{},8000);
+  var d=await r.json();
+  if(d.responseStatus===200&&d.responseData&&d.responseData.translatedText&&
+     d.responseData.translatedText!==text){
+    // MyMemory returns the original when rate-limited (429 disguised as 200)
+    if(d.responseStatus===200&&d.quotaFinished){throw new Error('quota');}
+    return d.responseData.translatedText;
+  }
+  if(d.responseStatus===429||d.quotaFinished)throw new Error('quota');
+  throw new Error('bad response');
+}
+
+async function tryLibreTranslate(text,f,t){
+  // Try each public mirror in order
+  var lastErr;
+  for(var i=0;i<LIBRE_MIRRORS.length;i++){
+    try{
+      var r=await fetchWithTimeout(LIBRE_MIRRORS[i]+'/translate',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({q:text,source:f,target:t,format:'text',api_key:''})
+      },8000);
+      var d=await r.json();
+      if(d.translatedText&&d.translatedText!==text)return d.translatedText;
+      throw new Error('empty');
+    }catch(e){lastErr=e;}
+  }
+  throw lastErr||new Error('all libre mirrors failed');
+}
+
 async function doTranslate(text,from,to){
   var f=from.split('-')[0],t=to.split('-')[0];
   if(f===t)return text;
+  // --- Try 1: MyMemory ---
   try{
-    var r=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair='+f+'|'+t);
-    var d=await r.json();
-    if(d.responseStatus===200&&d.responseData&&d.responseData.translatedText)return d.responseData.translatedText;
-    return '[Translation unavailable]';
-  }catch(e){return '[Network error]';}
+    var result=await tryMyMemory(text,f,t);
+    return result;
+  }catch(e1){
+    var isQuota=(e1.message==='quota');
+    ss(isQuota?'⚠️ MyMemory quota hit — trying fallback…':'⚠️ Retrying translation…','wrn');
+    // --- Try 2: MyMemory retry (only if not quota error) ---
+    if(!isQuota){
+      try{
+        var result2=await tryMyMemory(text,f,t);
+        return result2;
+      }catch(e2){}
+    }
+    // --- Try 3: LibreTranslate mirrors ---
+    try{
+      ss('⚠️ Using fallback translator…','wrn');
+      var result3=await tryLibreTranslate(text,f,t);
+      return result3;
+    }catch(e3){
+      // --- All failed: return original with notice ---
+      ss('❌ Translation failed — showing original text','err');
+      return '[Could not translate] '+text;
+    }
+  }
 }
 
 // ── TTS ENGINE ──
