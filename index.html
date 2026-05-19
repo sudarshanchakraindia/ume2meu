@@ -159,7 +159,36 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 .tf-send{background:var(--cyan);color:#07090f;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .tf-send:active{opacity:0.8;}
 .tf-hint{font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.5px;}
+
+/* ── REMOTE CALL: ROOM CONNECT UI ── */
+.room-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;}
+.room-status{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.room-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.room-dot.connected{background:var(--green);box-shadow:0 0 8px var(--green);animation:bl 1.5s infinite;}
+.room-dot.connecting{background:var(--orange);box-shadow:0 0 6px var(--orange);animation:bl 0.7s infinite;}
+.room-label{font-size:11px;font-weight:600;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
+.room-code-display{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--cyan);letter-spacing:6px;text-align:center;padding:12px 0;cursor:pointer;user-select:all;}
+.room-code-hint{font-size:10px;color:var(--muted);text-align:center;margin-top:-6px;margin-bottom:10px;}
+.room-actions{display:flex;gap:8px;flex-direction:column;}
+.room-btn{width:100%;padding:10px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;border:none;transition:all 0.2s;text-transform:uppercase;}
+.room-btn.create{background:linear-gradient(135deg,rgba(0,200,255,0.15),rgba(0,200,255,0.05));border:1px solid var(--cyan);color:var(--cyan);}
+.room-btn.create:hover{background:rgba(0,200,255,0.2);}
+.room-btn.join{background:linear-gradient(135deg,rgba(0,255,157,0.15),rgba(0,255,157,0.05));border:1px solid var(--green);color:var(--green);}
+.room-btn.join:hover{background:rgba(0,255,157,0.2);}
+.room-btn.leave{background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.4);color:var(--red);}
+.room-btn:disabled{opacity:0.35;cursor:not-allowed;}
+.room-input{width:100%;background:#111a28;border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-family:'Orbitron',monospace;font-size:16px;letter-spacing:4px;text-align:center;text-transform:uppercase;margin-bottom:6px;}
+.room-input:focus{outline:none;border-color:var(--green);}
+.peer-msgs{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;min-height:80px;max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.peer-msgs::-webkit-scrollbar{width:2px;}
+.peer-msgs::-webkit-scrollbar-thumb{background:var(--border2);}
+.pmsg{font-size:12px;line-height:1.5;word-break:break-word;padding:5px 8px;border-radius:7px;}
+.pmsg.sent{background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.12);color:var(--muted);}
+.pmsg.recv{background:rgba(0,255,157,0.06);border:1px solid rgba(0,255,157,0.12);color:var(--text);font-weight:500;}
+.pmsg-who{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;}
+.rtc-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.3);color:var(--green);font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:20px;margin-left:8px;}
 </style>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
 
@@ -256,38 +285,61 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <!-- REMOTE CALL -->
 <div id="callMode" style="flex:1;overflow-y:auto;padding:14px;gap:12px;display:none;flex-direction:column;">
 
-  <div class="info-box">
-    <strong>Two-device remote interpreter — no human middleman</strong>
-    <div class="step-row"><div class="sn">1</div><span>Each person opens Chatterbox on <strong>their own phone or laptop</strong>.</span></div>
-    <div class="step-row"><div class="sn">2</div><span>Select your role (A or B) and set both languages below.</span></div>
-    <div class="step-row"><div class="sn">3</div><span>Tap mic and speak. <strong>Translation plays aloud automatically</strong> — the call mic picks it up. Fully hands-free.</span></div>
-  </div>
+<!-- STEP 1: Room Connect -->
+<div class="room-panel" id="roomConnectPanel">
+<div class="room-status">
+<div class="room-dot" id="roomDot"></div>
+<div class="room-label" id="roomLabel">Not connected</div>
+<span class="rtc-badge" id="rtcBadge" style="display:none">⚡ WebRTC</span>
+</div>
 
-  <div class="card">
-    <div class="section-title">I Am</div>
-    <div class="role-row">
-      <div class="role-btn sel-a" id="roleA" onclick="setRole('A')">👤 Person A</div>
-      <div class="role-btn" id="roleB" onclick="setRole('B')">👤 Person B</div>
-    </div>
-    <div style="margin-top:12px;">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">MY LANGUAGE (I speak this)</div>
-      <select class="dev-select" id="callMyLang" onchange="updateCallLabels()"></select>
-    </div>
-    <div style="margin-top:10px;">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">OTHER PERSON SPEAKS (translate into this)</div>
-      <select class="dev-select" id="callTheirLang" onchange="updateCallLabels()"></select>
-    </div>
-  </div>
+<!-- Create room -->
+<div id="createSection">
+<div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Your Room Code</div>
+<div class="room-code-display" id="roomCodeDisplay" onclick="copyRoomCode()" title="Tap to copy">——————</div>
+<div class="room-code-hint">Share this code with the other person</div>
+<div class="room-actions">
+<button class="room-btn create" id="btnCreate" onclick="createRoom()">🔑 Create Room</button>
+</div>
+</div>
 
-  <div class="card">
-    <div class="section-title">Speak Now</div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0;">
-      <div class="big-mic-outer" id="bigOuter">
-        <div class="big-ring"></div><div class="big-ring"></div>
-        <button class="big-mic-btn" id="bigMic" onclick="toggleCallMic()">🎙️</button>
-      </div>
-      <div style="font-size:11px;font-weight:600;letter-spacing:2px;color:var(--muted);text-transform:uppercase;" id="callMicLabel">TAP TO SPEAK</div>
-      <div class="vol-bars-big" id="volCall"></div>
+<!-- Join room -->
+<div id="joinSection" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+<div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Or Join Existing Room</div>
+<input class="room-input" id="joinCodeInput" maxlength="6" placeholder="XXXXXX" oninput="this.value=this.value.toUpperCase()"/>
+<button class="room-btn join" id="btnJoin" onclick="joinRoom()">🔗 Join Room</button>
+</div>
+
+<!-- Leave button (shown when connected) -->
+<div id="leaveSection" style="display:none;margin-top:10px;">
+<button class="room-btn leave" onclick="leaveRoom()">✕ Disconnect</button>
+</div>
+</div>
+
+<!-- STEP 2: Language Setup -->
+<div class="card">
+<div class="section-title">My Language Setup</div>
+<div style="margin-top:4px;">
+<div style="font-size:10px;color:var(--muted);margin-bottom:4px;">I SPEAK (my language)</div>
+<select class="dev-select" id="callMyLang" onchange="updateCallLabels()"></select>
+</div>
+<div style="margin-top:10px;">
+<div style="font-size:10px;color:var(--muted);margin-bottom:4px;">THEY SPEAK (translate for me into this)</div>
+<select class="dev-select" id="callTheirLang" onchange="updateCallLabels()"></select>
+</div>
+</div>
+
+<!-- STEP 3: Speak -->
+<div class="card">
+<div class="section-title">Speak</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0;">
+<div class="big-mic-outer" id="bigOuter">
+<div class="big-ring"></div><div class="big-ring"></div>
+<button class="big-mic-btn" id="bigMic" onclick="toggleCallMic()" disabled>🎙️</button>
+</div>
+<div style="font-size:11px;font-weight:600;letter-spacing:2px;color:var(--muted);text-transform:uppercase;" id="callMicLabel">CONNECT FIRST</div>
+<div class="vol-bars-big" id="volCall"></div>
+</div>
 <div class="text-fallback" id="tfCall" style="width:100%;max-width:420px;">
 <div class="tf-row">
 <textarea class="tf-input" id="tfInputCall" placeholder="Type your message…" rows="1"></textarea>
@@ -295,21 +347,28 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 </div>
 <div class="tf-hint">⌨️ Text mode — mic not available in this browser</div>
 </div>
-    </div>
-  </div>
+</div>
 
-  <div class="dual-panels">
-    <div class="mini-panel">
-      <div class="mini-head" id="callOrigHead">YOU SAID</div>
-      <div class="mini-body" id="callOrig"><span class="mini-ph">Your speech…</span></div>
-    </div>
-    <div class="mini-panel">
-      <div class="mini-head" id="callTransHead">TRANSLATION</div>
-      <div class="mini-body" id="callTrans"><span class="mini-ph">Translation…</span></div>
-    </div>
-  </div>
+<!-- STEP 4: Live conversation -->
+<div class="dual-panels">
+<div class="mini-panel">
+<div class="mini-head" id="callOrigHead">YOU SAID</div>
+<div class="mini-body" id="callOrig"><span class="mini-ph">Your speech…</span></div>
+</div>
+<div class="mini-panel">
+<div class="mini-head" id="callTransHead">TRANSLATION</div>
+<div class="mini-body" id="callTrans"><span class="mini-ph">Translation…</span></div>
+</div>
+</div>
+
+<!-- STEP 5: Peer messages (what the other person is saying) -->
+<div id="peerMsgSection" style="display:none;">
+<div class="section-title">Other Person</div>
+<div class="peer-msgs" id="peerMsgList"><div class="empty-h">Waiting for messages…</div></div>
+</div>
 
 </div>
+
 </div><!-- end .main -->
 
 <!-- LANG PICKER -->
@@ -660,109 +719,903 @@ function setPanelTTS(p,on){
   }
 }
 
-// ── CALL MODE MIC ──
+// ── CALL MODE: WebRTC via PeerJS ──
+// Architecture:
+//   Person A: createRoom() → PeerJS gives a peer ID → display as 6-char room code
+//   Person B: joinRoom()   → connect(roomCode) → DataChannel opens
+//   On speech: translate locally → send {orig, trans, langOut} over DataChannel
+//   Receiver: display trans bubble + play TTS → no acoustic relay needed
+
+var rtcPeer   = null;   // PeerJS Peer instance
+var rtcConn   = null;   // DataConnection to the other device
+var rtcIsHost = false;  // true = created the room, false = joined
+
+// — Helpers —
+function rtcConnected(){ return rtcConn && rtcConn.open; }
+
+function setRoomUI(state){
+// state: 'idle' | 'hosting' | 'connecting' | 'connected'
+var dot   = document.getElementById('roomDot');
+var lbl   = document.getElementById('roomLabel');
+var badge = document.getElementById('rtcBadge');
+var leave = document.getElementById('leaveRow');
+var cBtn  = document.getElementById('createBtn');
+var jBtn  = document.getElementById('joinBtn');
+var jInput= document.getElementById('joinCodeInput');
+var logCard = document.getElementById('peerLogCard');
+if(state==='idle'){
+dot.className='room-dot';
+lbl.textContent='Not connected';
+badge.style.display='none';
+leave.style.display='none';
+logCard.style.display='none';
+if(cBtn)cBtn.disabled=false;
+if(jBtn)jBtn.disabled=false;
+if(jInput)jInput.disabled=false;
+}else if(state==='hosting'){
+dot.className='room-dot connecting';
+lbl.textContent='Waiting for peer…';
+badge.style.display='none';
+leave.style.display='block';
+if(cBtn)cBtn.disabled=true;
+if(jBtn)jBtn.disabled=true;
+if(jInput)jInput.disabled=true;
+}else if(state==='connecting'){
+dot.className='room-dot connecting';
+lbl.textContent='Connecting…';
+badge.style.display='none';
+leave.style.display='block';
+if(cBtn)cBtn.disabled=true;
+if(jBtn)jBtn.disabled=true;
+if(jInput)jInput.disabled=true;
+}else if(state==='connected'){
+dot.className='room-dot connected';
+lbl.textContent='Connected — peer-to-peer';
+badge.style.display='inline-flex';
+leave.style.display='block';
+logCard.style.display='block';
+if(cBtn)cBtn.disabled=true;
+if(jBtn)jBtn.disabled=true;
+if(jInput)jInput.disabled=true;
+}
+}
+
+function peerIdToCode(id){
+// PeerJS IDs are UUIDs; we show first 6 uppercase alphanum chars as the room code
+return id.replace(/-/g,'').toUpperCase().substring(0,6);
+}
+
+function addPeerMsg(who, orig, trans){
+var box = document.getElementById('peerMsgs');
+if(!box) return;
+var div = document.createElement('div');
+div.className = 'pmsg ' + (who==='me' ? 'sent' : 'recv');
+div.innerHTML = '<div class="pmsg-who">' + (who==='me' ? '🎤 You said' : '📥 They said') + '</div>' +
+'<div style="color:var(--muted);font-size:11px">' + esc(orig) + '</div>' +
+'<div style="margin-top:2px">' + esc(trans) + '</div>';
+box.appendChild(div);
+box.scrollTop = box.scrollHeight;
+}
+
+// — Create Room (host side) —
+function createRoom(){
+if(rtcPeer) rtcPeer.destroy();
+ss('📡 Creating room…','');
+try{
+rtcPeer = new Peer(undefined,{debug:0});
+}catch(e){
+ss('❌ PeerJS not loaded. Check your connection.','err');
+return;
+}
+rtcIsHost = true;
+
+rtcPeer.on('open', function(id){
+var code = peerIdToCode(id);
+// Store full peer ID mapped from short code
+rtcPeer._shortCode = code;
+rtcPeer._fullId = id;
+document.getElementById('myRoomCode').textContent = code;
+setRoomUI('hosting');
+ss('📡 Room ' + code + ' ready — share with other person','ok');
+});
+
+rtcPeer.on('connection', function(conn){
+rtcConn = conn;
+setupConn();
+ss('✅ Peer connected! Start speaking.','ok');
+setRoomUI('connected');
+});
+
+rtcPeer.on('error', function(err){
+ss('❌ RTC error: ' + err.type,'err');
+setRoomUI('idle');
+});
+}
+
+// — Join Room (guest side) —
+function joinRoom(){
+var input = document.getElementById('joinCodeInput');
+var code = (input ? input.value.trim().toUpperCase() : '');
+if(code.length < 6){ ss('⚠️ Enter the full 6-character room code','wrn'); return; }
+if(rtcPeer) rtcPeer.destroy();
+setRoomUI('connecting');
+ss('🔗 Connecting to room ' + code + '…','');
+rtcIsHost = false;
+
+try{
+rtcPeer = new Peer(undefined,{debug:0});
+}catch(e){
+ss('❌ PeerJS not loaded. Check your connection.','err');
+setRoomUI('idle');
+return;
+}
+
+rtcPeer.on('open', function(){
+// The host's full PeerJS ID starts with the 6 code chars (lowercased)
+// We need to look up the full ID. PeerJS allows connecting by full ID.
+// Since we only have 6 chars, we stored the full ID in the code display.
+// To handle this properly, we broadcast the full peer ID to the guest.
+// Solution: host encodes full peer ID differently — use the full UUID as room code
+// but display only first 6. Guest needs full ID. 
+// REVISED: show full peer ID as room code (copy on tap), display abbreviated.
+// But for UX we kept 6-char display. We need to rethink.
+// PRACTICAL FIX: the host's peer ID IS the room code (full UUID).
+// We'll take the 6-char code the guest enters and look it up via PeerJS lookup.
+// PeerJS /peers endpoint: https://0.peerjs.com:443/peerjs/peers
+// Fetch available peers and find one whose ID starts with our code.
+fetch('https://0.peerjs.com/peerjs/peers')
+.then(function(r){ return r.json(); })
+.then(function(peers){
+var match = peers.find(function(p){ return p.toUpperCase().startsWith(code.replace(/-/g,'').substring(0,6)); });
+if(!match){
+ss('❌ Room ' + code + ' not found. Check the code.','err');
+setRoomUI('idle');
+rtcPeer.destroy();
+return;
+}
+rtcConn = rtcPeer.connect(match, {reliable:true, serialization:'json'});
+setupConn();
+ss('⏳ Connecting to peer…','');
+})
+.catch(function(){
+// Fallback: treat the entered code as a full peer ID
+rtcConn = rtcPeer.connect(code, {reliable:true, serialization:'json'});
+setupConn();
+});
+});
+
+rtcPeer.on('error', function(err){
+ss('❌ RTC error: ' + err.type,'err');
+setRoomUI('idle');
+});
+}
+
+// — Setup DataConnection handlers —
+function setupConn(){
+if(!rtcConn) return;
+rtcConn.on('open', function(){
+setRoomUI('connected');
+ss('✅ Peer-to-peer connected! Start speaking.','ok');
+});
+rtcConn.on('data', function(data){
+// Incoming message from the other device
+if(data && data.trans){
+addPeerMsg('them', data.orig||'', data.trans);
+// Display in the callTrans panel and speak it
+document.getElementById('callOrig').textContent = data.orig || '';
+document.getElementById('callTrans').textContent = data.trans;
+var theirLang = callSt.theirLang;
+setPeerTTS(true);
+ss('🔊 Playing translation from peer…','ok');
+doSpeak(data.trans, data.langOut || theirLang.out, function(){
+setPeerTTS(false);
+ss('✅ Peer spoke — your turn','ok');
+});
+}
+});
+rtcConn.on('close', function(){
+ss('⚠️ Peer disconnected','wrn');
+setRoomUI('idle');
+rtcConn = null;
+});
+rtcConn.on('error', function(err){
+ss('❌ Connection error: ' + err,'err');
+});
+}
+
+function setPeerTTS(on){
+var lbl = document.getElementById('callMicLabel');
+if(on){
+if(lbl) lbl.textContent = '🔊 PEER SPEAKING…';
+}else{
+if(lbl) lbl.textContent = rtcConnected() ? 'CONNECTED — TAP TO SPEAK' : 'TAP TO SPEAK';
+}
+}
+
+// — Leave / cleanup —
+function leaveRoom(){
+if(rtcConn){ try{ rtcConn.close(); }catch(e){} rtcConn = null; }
+if(rtcPeer){ try{ rtcPeer.destroy(); }catch(e){} rtcPeer = null; }
+document.getElementById('myRoomCode').textContent = '——————';
+document.getElementById('joinCodeInput').value = '';
+document.getElementById('callMicLabel').textContent = 'TAP TO SPEAK';
+document.getElementById('callOrig').innerHTML = '<span class="mini-ph">Your speech…</span>';
+document.getElementById('callTrans').innerHTML = '<span class="mini-ph">Translation…</span>';
+document.getElementById('peerMsgs').innerHTML = '';
+setRoomUI('idle');
+ss('Disconnected — room closed','');
+}
+
+// Copy room code on tap
+document.addEventListener('DOMContentLoaded', function(){
+var codeEl = document.getElementById('myRoomCode');
+if(codeEl){
+codeEl.addEventListener('click', function(){
+var txt = codeEl.textContent.trim();
+if(txt && txt !== '——————'){
+navigator.clipboard.writeText(txt).then(function(){
+ss('📋 Room code copied!','ok');
+}).catch(function(){});
+}
+});
+}
+});
+
+// — Call mode mic (WebRTC-aware) —
 function toggleCallMic(){
-  if(callSt.listening)stopCallMic();else startCallMic();
+if(callSt.listening) stopCallMic(); else startCallMic();
 }
 
 async function startCallMic(){
-  if(!SR){activateFallback('call');ss('⚠️ Mic not available — text mode active','wrn');return;}
-  window.speechSynthesis&&window.speechSynthesis.cancel();
-  ss('🔐 Requesting microphone…','');
-  try{
-    callSt.stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-  }catch(err){
-    if(err.name==='NotAllowedError')ss('❌ Mic blocked — click 🔒 in address bar → Allow','err');
-    else ss('❌ Mic error: '+err.message,'err');
-    return;
-  }
-  try{
-    callSt.actx=new(window.AudioContext||window.webkitAudioContext)();
-    var an=callSt.actx.createAnalyser();an.fftSize=64;
-    callSt.actx.createMediaStreamSource(callSt.stream).connect(an);
-    var data=new Uint8Array(an.frequencyBinCount);
-    function tick(){
-      if(!callSt.listening){resetVol('volCall');return;}
-      an.getByteFrequencyData(data);
-      var avg=0;for(var i=0;i<data.length;i++)avg+=data[i];
-      setVol('volCall',(avg/data.length)*1.4,'#00c8ff');
-      callSt.vraf=requestAnimationFrame(tick);
-    }
-    tick();
-  }catch(e){}
-  callSt.listening=true;
-  var bm=document.getElementById('bigMic');
-  bm.textContent='⏹️';bm.className='big-mic-btn on';
-  document.getElementById('bigOuter').classList.add('on');
-  document.getElementById('callMicLabel').textContent='LISTENING — TAP TO STOP';
-  ss('✅ Speaking '+callSt.myLang.flag+' '+callSt.myLang.name+' → '+callSt.theirLang.flag+' '+callSt.theirLang.name,'ok');
-  startCallRec();
+if(!SR){ activateFallback('call'); ss('⚠️ Mic not available — text mode active','wrn'); return; }
+window.speechSynthesis && window.speechSynthesis.cancel();
+ss('🔐 Requesting microphone…','');
+try{
+callSt.stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+}catch(err){
+if(err.name==='NotAllowedError') ss('❌ Mic blocked — click 🔒 in address bar → Allow','err');
+else ss('❌ Mic error: '+err.message,'err');
+return;
+}
+try{
+callSt.actx = new(window.AudioContext||window.webkitAudioContext)();
+var an = callSt.actx.createAnalyser(); an.fftSize=64;
+callSt.actx.createMediaStreamSource(callSt.stream).connect(an);
+var data = new Uint8Array(an.frequencyBinCount);
+function tick(){
+if(!callSt.listening){ resetVol('volCall'); return; }
+an.getByteFrequencyData(data);
+var avg=0; for(var i=0;i<data.length;i++) avg+=data[i];
+setVol('volCall',(avg/data.length)*1.4,'#00c8ff');
+callSt.vraf=requestAnimationFrame(tick);
+}
+tick();
+}catch(e){}
+callSt.listening = true;
+var bm = document.getElementById('bigMic');
+bm.textContent='⏹️'; bm.className='big-mic-btn on';
+document.getElementById('bigOuter').classList.add('on');
+document.getElementById('callMicLabel').textContent = rtcConnected()
+? 'CONNECTED — LISTENING…'
+: 'LISTENING (no peer yet)…';
+ss('✅ Speaking '+callSt.myLang.flag+' '+callSt.myLang.name+' → '+callSt.theirLang.flag+' '+callSt.theirLang.name,'ok');
+startCallRec();
 }
 
 function startCallRec(){
-  if(!callSt.listening)return;
-  callSt.rec=new SR();
-  callSt.rec.lang=callSt.myLang.code;
-  callSt.rec.continuous=false;
-  callSt.rec.interimResults=true;
-  callSt.rec.maxAlternatives=1;
+if(!callSt.listening) return;
+callSt.rec = new SR();
+callSt.rec.lang = callSt.myLang.code;
+callSt.rec.continuous = false;
+callSt.rec.interimResults = true;
+callSt.rec.maxAlternatives = 1;
 
-  callSt.rec.onresult=async function(e){
-    var interim='',final='';
-    for(var i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
-      else interim+=e.results[i][0].transcript;
-    }
-    if(interim)document.getElementById('callOrig').textContent=interim;
-    if(final){
-      document.getElementById('callOrig').textContent=final;
-      document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
-      ss('⏳ Translating…','');
-      // Abort recognition while TTS plays
-      try{callSt.rec.abort();}catch(ex){}
-      var trans=await doTranslate(final,callSt.myLang.out,callSt.theirLang.out);
-      document.getElementById('callTrans').textContent=trans;
-      addHist('Person '+callRole,final,trans,callSt.theirLang);
-      callSt.ttsPlaying=true;
-      document.getElementById('callMicLabel').textContent='🔊 SPEAKING TRANSLATION…';
-      ss('🔊 Playing translation aloud…','ok');
-      doSpeak(trans,callSt.theirLang.out,function(){
-        callSt.ttsPlaying=false;
-        document.getElementById('callMicLabel').textContent='LISTENING — TAP TO STOP';
-        ss('✅ Done — speak again','ok');
-        // Resume listening
-        if(callSt.listening)setTimeout(startCallRec,200);
-      });
-    }
-  };
+callSt.rec.onresult = async function(e){
+var interim='', final='';
+for(var i=e.resultIndex;i<e.results.length;i++){
+if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+else interim+=e.results[i][0].transcript;
+}
+if(interim) document.getElementById('callOrig').textContent=interim;
+if(final){
+document.getElementById('callOrig').textContent=final;
+document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
+ss('⏳ Translating…','');
+try{ callSt.rec.abort(); }catch(ex){}
+var trans = await doTranslate(final, callSt.myLang.out, callSt.theirLang.out);
+document.getElementById('callTrans').textContent=trans;
+addHist('Me (call)',final,trans,callSt.theirLang);
 
-  callSt.rec.onerror=function(e){
-    if(e.error==='no-speech'||e.error==='aborted')return;
-    if(e.error==='not-allowed'){ss('❌ Mic revoked','err');stopCallMic();return;}
-    ss('⚠️ '+e.error,'wrn');
-  };
+if(rtcConnected()){
+// Send to peer via WebRTC data channel
+rtcConn.send({orig:final, trans:trans, langOut:callSt.theirLang.out});
+addPeerMsg('me', final, trans);
+document.getElementById('callMicLabel').textContent='CONNECTED — SENT TO PEER';
+ss('✅ Translation sent to peer','ok');
+// Resume listening after short pause
+if(callSt.listening) setTimeout(function(){ startCallRec(); }, 500);
+}else{
+// No peer: fall back to acoustic relay (play TTS through mic)
+callSt.ttsPlaying=true;
+document.getElementById('callMicLabel').textContent='🔊 SPEAKING (acoustic relay)…';
+ss('🔊 No peer connected — playing aloud (acoustic relay)','wrn');
+doSpeak(trans, callSt.theirLang.out, function(){
+callSt.ttsPlaying=false;
+document.getElementById('callMicLabel').textContent='LISTENING — TAP TO STOP';
+ss('✅ Done — speak again','ok');
+if(callSt.listening) setTimeout(startCallRec, 200);
+});
+}
+}
+};
 
-  callSt.rec.onend=function(){
-    if(callSt.listening&&!window.speechSynthesis.speaking){
-      setTimeout(startCallRec,150);
-    }
-  };
+callSt.rec.onerror = function(e){
+if(e.error==='no-speech'||e.error==='aborted') return;
+if(e.error==='not-allowed'){ ss('❌ Mic revoked','err'); stopCallMic(); return; }
+ss('⚠️ '+e.error,'wrn');
+};
 
-  try{callSt.rec.start();}catch(e){setTimeout(startCallRec,300);}
+callSt.rec.onend = function(){
+if(callSt.listening && !window.speechSynthesis.speaking){
+setTimeout(startCallRec, 150);
+}
+};
+
+try{ callSt.rec.start(); }catch(e){ setTimeout(startCallRec,300); }
 }
 
 function stopCallMic(){
-  callSt.listening=false;
-  if(callSt.rec){try{callSt.rec.abort();}catch(e){}callSt.rec=null;}
-  if(callSt.vraf){cancelAnimationFrame(callSt.vraf);callSt.vraf=null;}
-  if(callSt.stream){callSt.stream.getTracks().forEach(function(t){t.stop();});callSt.stream=null;}
-  if(callSt.actx){try{callSt.actx.close();}catch(e){}callSt.actx=null;}
-  resetVol('volCall');
-  var bm=document.getElementById('bigMic');
-  bm.textContent='🎙️';bm.className='big-mic-btn';
-  document.getElementById('bigOuter').classList.remove('on');
-  document.getElementById('callMicLabel').textContent='TAP TO SPEAK';
-  ss('Stopped.','');
+callSt.listening=false;
+if(callSt.rec){ try{ callSt.rec.abort(); }catch(e){} callSt.rec=null; }
+if(callSt.vraf){ cancelAnimationFrame(callSt.vraf); callSt.vraf=null; }
+if(callSt.stream){ callSt.stream.getTracks().forEach(function(t){t.stop();}); callSt.stream=null; }
+if(callSt.actx){ try{ callSt.actx.close(); }catch(e){} callSt.actx=null; }
+resetVol('volCall');
+var bm=document.getElementById('bigMic');
+bm.textContent='🎤'; bm.className='big-mic-btn';
+document.getElementById('bigOuter').classList.remove('on');
+document.getElementById('callMicLabel').textContent = rtcConnected() ? 'CONNECTED — TAP TO SPEAK' : 'TAP TO SPEAK';
+ss('Stopped.','');
+}
+
+// ── BUBBLES ──
+var iEls={A:null,B:null};
+function showInterim(p,t){
+  var box=document.getElementById('box'+p);
+  if(!iEls[p]){var el=document.createElement('div');el.className='bubble interim';box.appendChild(el);iEls[p]=el;}
+  iEls[p].textContent=t;box.scrollTop=box.scrollHeight;
+}
+function clearInterim(p){if(iEls[p]){iEls[p].remove();iEls[p]=null;}}
+function addBubble(p,text,type){
+  var box=document.getElementById('box'+p);
+  var ph=box.querySelector('.ph');if(ph)ph.remove();
+  var el=document.createElement('div');
+  el.className='bubble '+type;el.textContent=text;
+  box.appendChild(el);box.scrollTop=box.scrollHeight;
+}
+
+// ── LANG PICKER ──
+function openPicker(p){
+  activePicker=p;
+  document.getElementById('sheetHd').textContent='PERSON '+p+' LANGUAGE';
+  document.getElementById('lsearch').value='';
+  renderGrid('');
+  document.getElementById('langSheet').classList.remove('hidden');
+  setTimeout(function(){document.getElementById('lsearch').focus();},100);
+}
+function closePicker(e){
+  if(!e||e.target===document.getElementById('langSheet'))
+    document.getElementById('langSheet').classList.add('hidden');
+}
+function filterLangs(){renderGrid(document.getElementById('lsearch').value);}
+function renderGrid(q){
+  var g=document.getElementById('lgrid');
+  var sel=activePicker?st[activePicker].lang.code:'';
+  var seen={};
+  var filtered=LANGS.filter(function(l){
+    if(seen[l.code])return false;seen[l.code]=1;
+    return !q||l.name.toLowerCase().indexOf(q.toLowerCase())>=0;
+  });
+  g.innerHTML=filtered.map(function(l){
+    return '<div class="lopt'+(l.code===sel?' sel':'')+'" onclick="pickLang(\''+l.code+'\')">'+l.flag+' '+l.name+'</div>';
+  }).join('');
+}
+function pickLang(code){
+  var l=LANGS.find(function(x){return x.code===code;});
+  if(!l||!activePicker)return;
+  st[activePicker].lang=l;
+  updateLabels();
+  document.getElementById('langSheet').classList.add('hidden');
+  ss('Language updated!','ok');
+}
+
+// ── HISTORY ──
+function addHist(who,orig,trans,targetLang){
+  var t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  history.unshift({who:who,orig:orig,trans:trans,tl:targetLang,time:t});
+}
+function showHistory(){
+  var list=document.getElementById('hlist');
+  if(!history.length){
+    list.innerHTML='<div class="empty-h">No conversation yet</div>';
+  }else{
+    list.innerHTML=history.map(function(h){
+      return '<div class="hi">'+
+        '<div class="hi-who">'+h.who+' → '+(h.tl?h.tl.flag+' '+h.tl.name:'')+'</div>'+
+        '<div class="hi-o">'+esc(h.orig)+'</div>'+
+        '<div class="hi-t">'+esc(h.trans)+'</div>'+
+        '<div class="hi-m">'+h.time+'</div>'+
+        '</div>';
+    }).join('');
+  }
+  document.getElementById('histSheet').classList.remove('hidden');
+}
+function closeHist(e){
+  if(!e||e.target===document.getElementById('histSheet'))
+    document.getElementById('histSheet').classList.add('hidden');
+}
+function exportHistory(){
+  if(!history.length){alert('No history to export.');return;}
+  var txt=history.map(function(h){
+    return '['+h.time+'] '+h.who+'\nOriginal:    '+h.orig+'\nTranslated:  '+h.trans+'\n';
+  }).join('\n');
+  var blob=new Blob([txt],{type:'text/plain'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='chatterbox-history-'+new Date().toISOString().slice(0,10)+'.txt';
+  a.click();
+}
+
+// ── CLEAR ALL ──
+function clearAll(){
+  ['A','B'].forEach(function(p){
+    if(st[p].listening)stopMic(p);
+    document.getElementById('box'+p).innerHTML='<div class="ph">Tap mic to speak…</div>';
+  });
+  if(callSt.listening)stopCallMic();
+if(rtcConn||rtcPeer)leaveRoom();
+  document.getElementById('callOrig').innerHTML='<span class="mini-ph">Your speech…</span>';
+  document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translation…</span>';
+  history=[];
+  window.speechSynthesis&&window.speechSynthesis.cancel();
+  iEls={A:null,B:null};
+  ss('Cleared — ready','');
+}
+
+// ── UTILS ──
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── INIT ──
+(function(){
+  if(window.speechSynthesis){
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
+  }
+  if(!SR){
+activateFallback('A');
+activateFallback('B');
+activateFallback('call');
+ss('⚠️ Mic not supported in this browser — text mode enabled','wrn');
+}f(navigator.permissions){
+    navigator.permissions.query({name:'microphone'}).then(function(p){
+      if(p.state==='denied')ss('❌ Mic blocked — click 🔒 in address bar → Allow microphone','err');
+      else ss('Ready — tap 🎙️ to start','');
+      p.onchange=function(){
+        if(p.state==='denied')ss('❌ Mic blocked','err');
+        else ss('Mic access granted! Tap 🎙️ to start.','ok');
+      };
+    }).catch(function(){ss('Ready — tap 🎙️ to start','');});
+  }else{
+    ss('Ready — tap 🎙️ to start','');
+  }
+
+// Initialise room UI
+setRoomUI('idle');
+})();
+
+
+// ── STT FALLBACK (text mode for Firefox/Safari) ──
+function activateFallback(p){
+// Show text input panel, hide/dim mic button
+if(p==='A'||p==='B'){
+var tf=document.getElementById('tf'+p);
+var mic=document.getElementById('mic'+p);
+if(tf)tf.classList.add('active');
+if(mic){mic.disabled=true;mic.style.opacity='0.25';mic.title='Mic unavailable — use text input';}
+}else if(p==='call'){
+var tfC=document.getElementById('tfCall');
+var bm=document.getElementById('bigMic');
+if(tfC)tfC.classList.add('active');
+if(bm){bm.disabled=true;bm.style.opacity='0.25';bm.title='Mic unavailable — use text input';}
+}
+}
+
+async function sendText(p){
+var input=document.getElementById('tfInput'+p);
+if(!input)return;
+var text=input.value.trim();
+if(!text)return;
+input.value='';
+var other=p==='A'?'B':'A';
+addBubble(p,text,'orig');
+ss('⏳ Translating…','');
+var trans=await doTranslate(text,st[p].lang.out,st[other].lang.out);
+addBubble(other,trans,'trans');
+addHist('Person '+p,text,trans,st[other].lang);
+setPanelTTS(other,true);
+ss('🔊 Speaking '+st[other].lang.flag+' '+st[other].lang.name+'…','ok');
+doSpeak(trans,st[other].lang.out,function(){
+setPanelTTS(other,false);
+ss('✅ Done — type next message or Person '+other+' responds','ok');
+});
+}
+
+async function sendCallText(){
+var input=document.getElementById('tfInputCall');
+if(!input)return;
+var text=input.value.trim();
+if(!text)return;
+input.value='';
+document.getElementById('callOrig').textContent=text;
+document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.name.toUpperCase()+')';
+document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
+document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
+ss('⏳ Translating…','');
+var trans=await doTranslate(text,callSt.myLang.out,callSt.theirLang.out);
+document.getElementById('callTrans').textContent=trans;
+addHist('Remote (you)',text,trans,callSt.theirLang);
+showSentInPeerPanel(text,trans);
+sendToPeer(text,trans,callSt.myLang.name,callSt.theirLang.name);
+ss('📤 Sent to peer — '+trans,'ok');
+}
+}
+
+// Allow Enter key to send (Shift+Enter for newline)
+document.addEventListener('DOMContentLoaded',function(){
+['tfInputA','tfInputB','tfInputCall'].forEach(function(id){
+var el=document.getElementById(id);
+if(!el)return;
+el.addEventListener('keydown',function(e){
+if(e.key==='Enter'&&!e.shiftKey){
+e.preventDefault();
+if(id==='tfInputA')sendText('A');
+else if(id==='tfInputB')sendText('B');
+else sendCallText();
+}
+});
+});
+});
+
+// ── PWA INSTALL ──
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  var banner = document.getElementById('installBanner');
+  if (banner) banner.style.display = 'flex';
+});
+window.addEventListener('appinstalled', function() {
+  deferredPrompt = null;
+  var banner = document.getElementById('installBanner');
+  if (banner) banner.style.display = 'none';
+});
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(result) {
+    deferredPrompt = null;
+    var banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'none';
+  });
+}
+
+</script>
+</body>
+</html>// ── CALL MODE — WebRTC via PeerJS ──
+// Architecture:
+//   Person A: createRoom() → PeerJS gives a peer.id → show as Room Code
+//   Person B: joinRoom(code) → peer.connect(code) → data channel opens
+//   On speech/text: translate → send JSON {orig, trans, lang} over data channel
+//   Receiver: display bubble + play TTS locally (no acoustic relay!)
+
+var peer = null;          // PeerJS Peer instance
+var peerConn = null;      // active DataConnection
+var isRoomHost = false;   // true = created room (Person A)
+
+// ── Room Code helpers ──
+function genCode(){
+var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+var code='';
+for(var i=0;i<6;i++) code+=chars[Math.floor(Math.random()*chars.length)];
+return code;
+}
+
+function showRoomCode(code){
+document.getElementById('roomCodeDisplay').textContent=code;
+}
+
+function copyRoomCode(){
+var code=document.getElementById('roomCodeDisplay').textContent;
+if(code==='——————')return;
+navigator.clipboard&&navigator.clipboard.writeText(code).then(function(){
+ss('📋 Room code copied: '+code,'ok');
+});
+}
+
+// ── Create Room (Person A) ──
+function createRoom(){
+if(peer&&!peer.destroyed){peer.destroy();}
+var code=genCode();
+ss('⌛ Connecting to signalling server…','');
+setRoomUI('connecting');
+peer=new Peer(code,{debug:0});
+peer.on('open',function(id){
+showRoomCode(id);
+isRoomHost=true;
+ss('✅ Room ready — share code '+id+' with the other person','ok');
+setRoomUI('waiting');
+});
+peer.on('connection',function(conn){
+peerConn=conn;
+setupDataConn(conn);
+ss('🔗 '+conn.peer+' connected!','ok');
+setRoomUI('connected');
+});
+peer.on('error',function(e){
+ss('❌ PeerJS: '+e.type,'err');
+setRoomUI('idle');
+});
+}
+
+// ── Join Room (Person B) ──
+function joinRoom(){
+var code=document.getElementById('joinCodeInput').value.trim().toUpperCase();
+if(code.length<4){ss('⚠️ Enter the room code first','wrn');return;}
+if(peer&&!peer.destroyed){peer.destroy();}
+ss('⌛ Connecting…','');
+setRoomUI('connecting');
+peer=new Peer(undefined,{debug:0});
+peer.on('open',function(){
+var conn=peer.connect(code,{reliable:true});
+peerConn=conn;
+conn.on('open',function(){
+ss('🔗 Connected to room '+code+'!','ok');
+setRoomUI('connected');
+setupDataConn(conn);
+});
+conn.on('error',function(e){ss('❌ Connection error: '+e,'err');setRoomUI('idle');});
+});
+peer.on('error',function(e){
+ss('❌ '+e.type+' — check the room code','err');
+setRoomUI('idle');
+});
+}
+
+// ── Leave Room ──
+function leaveRoom(){
+if(peerConn){try{peerConn.close();}catch(e){}peerConn=null;}
+if(peer){try{peer.destroy();}catch(e){}peer=null;}
+showRoomCode('——————');
+document.getElementById('joinCodeInput').value='';
+setRoomUI('idle');
+ss('Disconnected.','');
+}
+
+// ── Room UI state machine ──
+function setRoomUI(state){
+var dot=document.getElementById('roomDot');
+var label=document.getElementById('roomLabel');
+var badge=document.getElementById('rtcBadge');
+var createSec=document.getElementById('createSection');
+var joinSec=document.getElementById('joinSection');
+var leaveSec=document.getElementById('leaveSection');
+var bigMic=document.getElementById('bigMic');
+var callMicLabel=document.getElementById('callMicLabel');
+var peerSec=document.getElementById('peerMsgSection');
+dot.className='room-dot';
+if(state==='idle'){
+label.textContent='Not connected';badge.style.display='none';
+createSec.style.display='';joinSec.style.display='';leaveSec.style.display='none';
+if(bigMic)bigMic.disabled=true;
+callMicLabel.textContent='CONNECT FIRST';
+peerSec.style.display='none';
+}else if(state==='connecting'){
+dot.classList.add('connecting');label.textContent='Connecting…';badge.style.display='none';
+createSec.style.display='none';joinSec.style.display='none';leaveSec.style.display='none';
+if(bigMic)bigMic.disabled=true;callMicLabel.textContent='CONNECTING…';
+}else if(state==='waiting'){
+dot.classList.add('connecting');label.textContent='Waiting for other person…';badge.style.display='none';
+createSec.style.display='';joinSec.style.display='none';leaveSec.style.display='';
+if(bigMic)bigMic.disabled=true;callMicLabel.textContent='WAITING FOR PEER…';
+}else if(state==='connected'){
+dot.classList.add('connected');label.textContent='Connected — peer-to-peer';badge.style.display='';
+createSec.style.display='none';joinSec.style.display='none';leaveSec.style.display='';
+if(bigMic)bigMic.disabled=!SR;callMicLabel.textContent=SR?'TAP TO SPEAK':'TEXT MODE';
+peerSec.style.display='';
+}
+}
+
+// ── Data Channel: setup send/receive ──
+function setupDataConn(conn){
+conn.on('data',function(data){
+// Received a message from the other device
+if(data&&data.type==='message'){
+receivePeerMessage(data);
+}else if(data&&data.type==='ping'){
+conn.send({type:'pong'});
+}
+});
+conn.on('close',function(){
+ss('🔴 Peer disconnected','err');
+setRoomUI('idle');
+peerConn=null;
+});
+conn.on('error',function(e){ss('⚠️ Data channel: '+e,'wrn');});
+}
+
+// ── Send translated message to peer ──
+function sendToPeer(orig,trans,myLangName,theirLangName){
+if(!peerConn||!peerConn.open)return;
+try{
+peerConn.send({
+type:'message',
+orig:orig,
+trans:trans,
+myLang:myLangName,
+theirLang:theirLangName,
+ts:Date.now()
+});
+}catch(e){ss('⚠️ Send failed: '+e.message,'wrn');}
+}
+
+// ── Receive message from peer → show + play TTS ──
+function receivePeerMessage(data){
+// Show in peer message panel
+var list=document.getElementById('peerMsgList');
+var empty=list.querySelector('.empty-h');
+if(empty)empty.remove();
+var msg=document.createElement('div');
+msg.className='pmsg recv';
+msg.innerHTML='<div class="pmsg-who">📱 Them → '+escH(data.theirLang||'')+'</div>'+
+'<div style="font-size:10px;color:var(--muted);">'+escH(data.orig||'')+'</div>'+
+'<div>'+escH(data.trans||'')+'</div>';
+list.appendChild(msg);
+list.scrollTop=list.scrollHeight;
+
+// Update the dual panels
+document.getElementById('callTransHead').textContent='← THEM SAID';
+document.getElementById('callTrans').textContent=data.orig||'';
+document.getElementById('callOrigHead').textContent='TRANSLATION FOR YOU';
+document.getElementById('callOrig').textContent=data.trans||'';
+
+// Play TTS of the translation (in our language)
+var theirLangOut=callSt.theirLang.out;
+ss('🔊 Playing: '+escH(data.trans||''),'ok');
+doSpeak(data.trans||'',theirLangOut,function(){
+ss('✅ Done — your turn to speak','ok');
+});
+}
+
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── Add outgoing message to peer panel ──
+function showSentInPeerPanel(orig,trans){
+var list=document.getElementById('peerMsgList');
+if(!list)return;
+var empty=list.querySelector('.empty-h');
+if(empty)empty.remove();
+var msg=document.createElement('div');
+msg.className='pmsg sent';
+msg.innerHTML='<div class="pmsg-who">📱 You said</div>'+
+'<div>'+escH(orig)+'</div>'+
+'<div style="font-size:10px;color:var(--muted);">→ '+escH(trans)+'</div>';
+list.appendChild(msg);
+list.scrollTop=list.scrollHeight;
+}
+
+// ── Mic toggle (call mode) ──
+function toggleCallMic(){
+if(callSt.listening)stopCallMic();else startCallMic();
+}
+
+async function startCallMic(){
+if(!SR){activateFallback('call');ss('⚠️ Mic not available — text mode active','wrn');return;}
+window.speechSynthesis&&window.speechSynthesis.cancel();
+ss('🔐 Requesting microphone…','');
+try{
+callSt.stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+}catch(err){
+if(err.name==='NotAllowedError')ss('❌ Mic blocked — click 🔒 in address bar → Allow','err');
+else ss('❌ Mic error: '+err.message,'err');
+return;
+}
+try{
+callSt.actx=new(window.AudioContext||window.webkitAudioContext)();
+var an=callSt.actx.createAnalyser();an.fftSize=64;
+callSt.actx.createMediaStreamSource(callSt.stream).connect(an);
+var data=new Uint8Array(an.frequencyBinCount);
+function tick(){
+if(!callSt.listening){resetVol('volCall');return;}
+an.getByteFrequencyData(data);
+var avg=0;for(var i=0;i<data.length;i++)avg+=data[i];
+setVol('volCall',(avg/data.length)*1.4,'#00c8ff');
+callSt.vraf=requestAnimationFrame(tick);
+}
+tick();
+}catch(e){}
+callSt.listening=true;
+var bm=document.getElementById('bigMic');
+bm.textContent='⏹️';bm.className='big-mic-btn on';
+document.getElementById('bigOuter').classList.add('on');
+document.getElementById('callMicLabel').textContent='LISTENING — TAP TO STOP';
+ss('✅ Speaking '+callSt.myLang.flag+' '+callSt.myLang.name+' → '+callSt.theirLang.flag+' '+callSt.theirLang.name,'ok');
+startCallRec();
+}
+
+function startCallRec(){
+if(!callSt.listening)return;
+callSt.rec=new SR();
+callSt.rec.lang=callSt.myLang.code;
+callSt.rec.continuous=false;
+callSt.rec.interimResults=true;
+callSt.rec.maxAlternatives=1;
+
+callSt.rec.onresult=async function(e){
+var interim='',final='';
+for(var i=e.resultIndex;i<e.results.length;i++){
+if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+else interim+=e.results[i][0].transcript;
+}
+if(interim)document.getElementById('callOrig').textContent=interim;
+if(final){
+document.getElementById('callOrig').textContent=final;
+document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.name.toUpperCase()+')';
+document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
+document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
+ss('⏳ Translating…','');
+try{callSt.rec.abort();}catch(ex){}
+var trans=await doTranslate(final,callSt.myLang.out,callSt.theirLang.out);
+document.getElementById('callTrans').textContent=trans;
+addHist('Remote (you)',final,trans,callSt.theirLang);
+showSentInPeerPanel(final,trans);
+// Send to peer FIRST (they hear it on their device)
+sendToPeer(final,trans,callSt.myLang.name,callSt.theirLang.name);
+// Local feedback: just confirm sent
+ss('📤 Sent to peer — '+trans,'ok');
+// Resume mic after short delay
+callSt.ttsPlaying=false;
+document.getElementById('callMicLabel').textContent='LISTENING — TAP TO STOP';
+if(callSt.listening)setTimeout(startCallRec,300);
+}
+};
+
+callSt.rec.onerror=function(e){
+if(e.error==='no-speech'||e.error==='aborted')return;
+if(e.error==='not-allowed'){ss('❌ Mic revoked','err');stopCallMic();return;}
+ss('⚠️ '+e.error,'wrn');
+};
+
+callSt.rec.onend=function(){
+if(callSt.listening&&!window.speechSynthesis.speaking){
+setTimeout(startCallRec,150);
+}
+};
+
+try{callSt.rec.start();}catch(e){setTimeout(startCallRec,300);}
+}
+
+function stopCallMic(){
+callSt.listening=false;
+if(callSt.rec){try{callSt.rec.abort();}catch(e){}callSt.rec=null;}
+if(callSt.vraf){cancelAnimationFrame(callSt.vraf);callSt.vraf=null;}
+if(callSt.stream){callSt.stream.getTracks().forEach(function(t){t.stop();});callSt.stream=null;}
+if(callSt.actx){try{callSt.actx.close();}catch(e){}callSt.actx=null;}
+resetVol('volCall');
+var bm=document.getElementById('bigMic');
+bm.textContent='🎤️';bm.className='big-mic-btn';
+document.getElementById('bigOuter').classList.remove('on');
+document.getElementById('callMicLabel').textContent='TAP TO SPEAK';
+ss('Stopped.','');
 }
 
 // ── BUBBLES ──
