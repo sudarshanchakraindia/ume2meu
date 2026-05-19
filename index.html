@@ -149,6 +149,16 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
   .swap-pill{flex-direction:column;padding:10px 5px;}
   #callMode{padding:20px;}
 }
+
+/* ── TEXT INPUT FALLBACK (for Firefox/Safari) ── */
+.text-fallback{display:none;flex-direction:column;align-items:stretch;gap:6px;padding:6px 14px 8px;flex-shrink:0;}
+.text-fallback.active{display:flex;}
+.tf-row{display:flex;gap:6px;}
+.tf-input{flex:1;background:var(--card2);border:1px solid var(--border2);color:var(--text);padding:7px 10px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;resize:none;height:38px;line-height:1.4;}
+.tf-input:focus{outline:none;border-color:var(--cyan);}
+.tf-send{background:var(--cyan);color:#07090f;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.tf-send:active{opacity:0.8;}
+.tf-hint{font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.5px;}
 </style>
 </head>
 <body>
@@ -202,6 +212,13 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
         <button class="lang-btn" onclick="openPicker('A')" title="Change language">🌐</button>
       </div>
     </div>
+<div class="text-fallback" id="tfA">
+<div class="tf-row">
+<textarea class="tf-input" id="tfInputA" placeholder="Type your message (A)…" rows="1"></textarea>
+<button class="tf-send" onclick="sendText('A')">Send</button>
+</div>
+<div class="tf-hint">⌨️ Text mode — mic not available in this browser</div>
+</div>
 
     <div class="divider"><div class="swap-pill" onclick="swapLangs()">⇄ swap</div></div>
 
@@ -225,6 +242,13 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
         <button class="lang-btn" onclick="openPicker('B')" title="Change language">🌐</button>
       </div>
     </div>
+<div class="text-fallback" id="tfB">
+<div class="tf-row">
+<textarea class="tf-input" id="tfInputB" placeholder="Type your message (B)…" rows="1"></textarea>
+<button class="tf-send" onclick="sendText('B')">Send</button>
+</div>
+<div class="tf-hint">⌨️ Text mode — mic not available in this browser</div>
+</div>
 
   </div>
 </div>
@@ -264,6 +288,13 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
       </div>
       <div style="font-size:11px;font-weight:600;letter-spacing:2px;color:var(--muted);text-transform:uppercase;" id="callMicLabel">TAP TO SPEAK</div>
       <div class="vol-bars-big" id="volCall"></div>
+<div class="text-fallback" id="tfCall" style="width:100%;max-width:420px;">
+<div class="tf-row">
+<textarea class="tf-input" id="tfInputCall" placeholder="Type your message…" rows="1"></textarea>
+<button class="tf-send" onclick="sendCallText()">Send</button>
+</div>
+<div class="tf-hint">⌨️ Text mode — mic not available in this browser</div>
+</div>
     </div>
   </div>
 
@@ -487,7 +518,7 @@ function toggleMic(p){
 }
 
 async function startMic(p){
-  if(!SR){ss('❌ Use Chrome or Edge browser','err');return;}
+  if(!SR){activateFallback(p);ss('⚠️ Mic not available — text mode active','wrn');return;}
   var other=p==='A'?'B':'A';
   // Stop the other person's mic if active
   if(st[other].listening)stopMic(other);
@@ -635,7 +666,7 @@ function toggleCallMic(){
 }
 
 async function startCallMic(){
-  if(!SR){ss('❌ Use Chrome or Edge','err');return;}
+  if(!SR){activateFallback('call');ss('⚠️ Mic not available — text mode active','wrn');return;}
   window.speechSynthesis&&window.speechSynthesis.cancel();
   ss('🔐 Requesting microphone…','');
   try{
@@ -847,13 +878,11 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
     window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
   }
   if(!SR){
-    ['micA','micB','bigMic'].forEach(function(id){
-      var el=document.getElementById(id);if(el)el.disabled=true;
-    });
-    ss('❌ Use Google Chrome or Microsoft Edge — speech not supported here','err');
-    return;
-  }
-  if(navigator.permissions){
+activateFallback('A');
+activateFallback('B');
+activateFallback('call');
+ss('⚠️ Mic not supported in this browser — text mode enabled','wrn');
+}f(navigator.permissions){
     navigator.permissions.query({name:'microphone'}).then(function(p){
       if(p.state==='denied')ss('❌ Mic blocked — click 🔒 in address bar → Allow microphone','err');
       else ss('Ready — tap 🎙️ to start','');
@@ -866,6 +895,79 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
     ss('Ready — tap 🎙️ to start','');
   }
 })();
+
+
+// ── STT FALLBACK (text mode for Firefox/Safari) ──
+function activateFallback(p){
+// Show text input panel, hide/dim mic button
+if(p==='A'||p==='B'){
+var tf=document.getElementById('tf'+p);
+var mic=document.getElementById('mic'+p);
+if(tf)tf.classList.add('active');
+if(mic){mic.disabled=true;mic.style.opacity='0.25';mic.title='Mic unavailable — use text input';}
+}else if(p==='call'){
+var tfC=document.getElementById('tfCall');
+var bm=document.getElementById('bigMic');
+if(tfC)tfC.classList.add('active');
+if(bm){bm.disabled=true;bm.style.opacity='0.25';bm.title='Mic unavailable — use text input';}
+}
+}
+
+async function sendText(p){
+var input=document.getElementById('tfInput'+p);
+if(!input)return;
+var text=input.value.trim();
+if(!text)return;
+input.value='';
+var other=p==='A'?'B':'A';
+addBubble(p,text,'orig');
+ss('⏳ Translating…','');
+var trans=await doTranslate(text,st[p].lang.out,st[other].lang.out);
+addBubble(other,trans,'trans');
+addHist('Person '+p,text,trans,st[other].lang);
+setPanelTTS(other,true);
+ss('🔊 Speaking '+st[other].lang.flag+' '+st[other].lang.name+'…','ok');
+doSpeak(trans,st[other].lang.out,function(){
+setPanelTTS(other,false);
+ss('✅ Done — type next message or Person '+other+' responds','ok');
+});
+}
+
+async function sendCallText(){
+var input=document.getElementById('tfInputCall');
+if(!input)return;
+var text=input.value.trim();
+if(!text)return;
+input.value='';
+document.getElementById('callOrig').textContent=text;
+document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
+ss('⏳ Translating…','');
+var trans=await doTranslate(text,callSt.myLang.out,callSt.theirLang.out);
+document.getElementById('callTrans').textContent=trans;
+addHist('Person '+callRole,text,trans,callSt.theirLang);
+document.getElementById('callMicLabel').textContent='🔊 SPEAKING TRANSLATION…';
+ss('🔊 Playing translation aloud…','ok');
+doSpeak(trans,callSt.theirLang.out,function(){
+document.getElementById('callMicLabel').textContent='TEXT MODE — TYPE TO TRANSLATE';
+ss('✅ Done — type next message','ok');
+});
+}
+
+// Allow Enter key to send (Shift+Enter for newline)
+document.addEventListener('DOMContentLoaded',function(){
+['tfInputA','tfInputB','tfInputCall'].forEach(function(id){
+var el=document.getElementById(id);
+if(!el)return;
+el.addEventListener('keydown',function(e){
+if(e.key==='Enter'&&!e.shiftKey){
+e.preventDefault();
+if(id==='tfInputA')sendText('A');
+else if(id==='tfInputB')sendText('B');
+else sendCallText();
+}
+});
+});
+});
 
 // ── PWA INSTALL ──
 var deferredPrompt = null;
