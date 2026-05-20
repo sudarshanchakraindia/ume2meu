@@ -16,10 +16,10 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#07090f;--card:#0d1525;--card2:#111e30;
-  --border:rgba(0,200,255,0.12);--border2:rgba(0,200,255,0.25);
-  --cyan:#00c8ff;--green:#00ff9d;--orange:#ff8c42;
-  --red:#ff4757;--muted:#4a7090;--text:#e2eaff;
+--bg:#07090f;--card:#0d1525;--card2:#111e30;
+--border:rgba(0,200,255,0.12);--border2:rgba(0,200,255,0.25);
+--cyan:#00c8ff;--green:#00ff9d;--orange:#ff8c42;
+--red:#ff4757;--muted:#4a7090;--text:#e2eaff;
 }
 html,body{height:100%;overflow:hidden;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;height:100dvh;}
@@ -65,6 +65,8 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 .bubble.orig{background:rgba(0,200,255,0.05);border:1px solid rgba(0,200,255,0.1);color:var(--muted);font-size:11px;}
 .bubble.trans{background:rgba(0,255,157,0.06);border:1px solid rgba(0,255,157,0.12);color:var(--text);font-weight:500;}
 .bubble.interim{color:var(--muted);font-style:italic;font-size:12px;padding:2px 12px;}
+.bubble.streaming{background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.15);color:var(--text);font-size:13px;animation:pulse-border 1.2s infinite;}
+@keyframes pulse-border{0%,100%{border-color:rgba(0,200,255,0.15);}50%{border-color:rgba(0,200,255,0.4);}}
 .ph{color:#1e3050;font-size:12px;font-style:italic;padding:4px 0;}
 .mic-wrap{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:6px 0 4px;gap:12px;}
 .mic-outer{position:relative;width:54px;height:54px;display:flex;align-items:center;justify-content:center;}
@@ -87,10 +89,6 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 #callMode{flex:1;overflow-y:auto;padding:14px;gap:12px;display:none;flex-direction:column;}
 .section-title{font-size:10px;font-weight:600;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
 .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;}
-.role-row{display:flex;gap:8px;margin-bottom:4px;}
-.role-btn{flex:1;padding:10px 6px;background:var(--card2);border:2px solid var(--border);border-radius:10px;color:var(--muted);font-size:12px;font-weight:600;text-align:center;cursor:pointer;transition:all 0.2s;-webkit-tap-highlight-color:transparent;}
-.role-btn.sel-a{border-color:var(--cyan);color:var(--cyan);background:rgba(0,200,255,0.07);}
-.role-btn.sel-b{border-color:var(--green);color:var(--green);background:rgba(0,255,157,0.07);}
 .big-mic-outer{position:relative;width:80px;height:80px;display:flex;align-items:center;justify-content:center;}
 .big-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,0.08);}
 .big-mic-outer.on .big-ring{animation:pr 1.3s ease-out infinite;}
@@ -108,9 +106,6 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 .dev-select{width:100%;background:#111a28;border:1px solid var(--border2);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;appearance:none;margin-top:6px;}
 .dev-select:focus{outline:none;border-color:var(--cyan);}
 .info-box{background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.15);border-radius:10px;padding:12px 14px;font-size:11px;color:var(--muted);line-height:1.7;}
-.info-box strong{color:var(--text);}
-.step-row{display:flex;gap:8px;align-items:flex-start;margin-top:8px;}
-.sn{width:18px;height:18px;border-radius:50%;flex-shrink:0;background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.3);color:var(--cyan);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
 .sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:flex-end;backdrop-filter:blur(6px);}
 .sheet-overlay.hidden{display:none;}
 .sheet{width:100%;background:var(--card);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:16px 16px 36px;max-height:72vh;display:flex;flex-direction:column;gap:10px;}
@@ -141,16 +136,15 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 .install-text{font-size:11px;color:var(--text);}
 .install-btn{background:var(--cyan);color:#07090f;border:none;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
 @media(min-width:600px){
-  .two-halves{flex-direction:row;}
-  .person{border-bottom:none;border-right:1px solid var(--border);}
-  .person:last-child{border-right:none;}
-  .person.flipped{transform:none;}
-  .divider{width:2px;height:auto;flex-direction:column;}
-  .swap-pill{flex-direction:column;padding:10px 5px;}
-  #callMode{padding:20px;}
+.two-halves{flex-direction:row;}
+.person{border-bottom:none;border-right:1px solid var(--border);}
+.person:last-child{border-right:none;}
+.person.flipped{transform:none;}
+.divider{width:2px;height:auto;flex-direction:column;}
+.swap-pill{flex-direction:column;padding:10px 5px;}
+#callMode{padding:20px;}
 }
-
-/* ── TEXT INPUT FALLBACK (for Firefox/Safari) ── */
+/* TEXT INPUT FALLBACK */
 .text-fallback{display:none;flex-direction:column;align-items:stretch;gap:6px;padding:6px 14px 8px;flex-shrink:0;}
 .text-fallback.active{display:flex;}
 .tf-row{display:flex;gap:6px;}
@@ -159,8 +153,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 .tf-send{background:var(--cyan);color:#07090f;border:none;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .tf-send:active{opacity:0.8;}
 .tf-hint{font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.5px;}
-
-/* ── REMOTE CALL: ROOM CONNECT UI ── */
+/* ROOM PANEL */
 .room-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;}
 .room-status{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .room-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
@@ -193,54 +186,54 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <body>
 
 <div id="installBanner">
-  <div class="install-text">📲 Install Chatterbox as an app</div>
-  <button class="install-btn" onclick="installPWA()">Install</button>
+<div class="install-text">📲 Install Chatterbox as an app</div>
+<button class="install-btn" onclick="installPWA()">Install</button>
 </div>
 
 <header role="banner">
-  <div class="logo">
-    <div class="logo-name">CHATTERBOX</div>
-    <div class="logo-sub">REAL-TIME VOICE INTERPRETER</div>
-  </div>
-  <div class="hdr-btns">
-    <button class="hbtn" onclick="showHistory()" title="History" aria-label="Show conversation history">📜</button>
-    <button class="hbtn" onclick="clearAll()" title="Clear" aria-label="Clear all conversations">🗑</button>
-  </div>
+<div class="logo">
+<div class="logo-name">CHATTERBOX</div>
+<div class="logo-sub">REAL-TIME VOICE INTERPRETER</div>
+</div>
+<div class="hdr-btns">
+<button class="hbtn" onclick="showHistory()" title="History" aria-label="Show conversation history">📜</button>
+<button class="hbtn" onclick="clearAll()" title="Clear" aria-label="Clear all conversations">🗑</button>
+</div>
 </header>
 
 <div id="sb">Tap a mic button to start speaking</div>
 
 <div class="mode-tabs" role="tablist" aria-label="View mode">
-  <div class="mtab on" id="tab-face" onclick="switchMode('face')" role="tab" aria-selected="true" tabindex="0">🤝 Face to Face</div>
-  <div class="mtab" id="tab-call" onclick="switchMode('call')" role="tab" aria-selected="false" tabindex="0">📞 Remote Call</div>
+<div class="mtab on" id="tab-face" onclick="switchMode('face')" role="tab" aria-selected="true" tabindex="0">🤝 Face to Face</div>
+<div class="mtab" id="tab-call" onclick="switchMode('call')" role="tab" aria-selected="false" tabindex="0">📞 Remote Call</div>
 </div>
 
 <div class="main" role="main">
 
 <!-- FACE TO FACE -->
 <div id="faceMode" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
-  <div class="two-halves">
+<div class="two-halves">
 
-    <div class="person" id="personA">
-      <div class="tts-indicator">🔊 SPEAKING</div>
-      <div class="person-hdr">
-        <div class="avatar av-a">A</div>
-        <div class="pinfo">
-          <div class="pname">Person A</div>
-          <div class="plang" id="langLblA">🇮🇳 Hindi</div>
-        </div>
-        <div class="pstatus"><div class="sdot" id="dotA"></div><span id="staA">Idle</span></div>
-      </div>
-      <div class="speech-box" id="boxA"><div class="ph">Tap mic to speak…</div></div>
-      <div class="mic-wrap">
-        <div class="vol-bars" id="volA"></div>
-        <div class="mic-outer" id="outerA">
-          <div class="ring"></div><div class="ring"></div>
-          <button class="mic-btn" id="micA" onclick="toggleMic('A')" aria-label="Microphone for Person A">🎙️</button>
-        </div>
-        <button class="lang-btn" onclick="openPicker('A')" title="Change language" aria-label="Change language for Person A">🌐</button>
-      </div>
-    </div>
+<div class="person" id="personA">
+<div class="tts-indicator">🔊 SPEAKING</div>
+<div class="person-hdr">
+<div class="avatar av-a">A</div>
+<div class="pinfo">
+<div class="pname">Person A</div>
+<div class="plang" id="langLblA">🇮🇳 Hindi</div>
+</div>
+<div class="pstatus"><div class="sdot" id="dotA"></div><span id="staA">Idle</span></div>
+</div>
+<div class="speech-box" id="boxA"><div class="ph">Tap mic to speak…</div></div>
+<div class="mic-wrap">
+<div class="vol-bars" id="volA"></div>
+<div class="mic-outer" id="outerA">
+<div class="ring"></div><div class="ring"></div>
+<button class="mic-btn" id="micA" onclick="toggleMic('A')" aria-label="Microphone for Person A">🎙️</button>
+</div>
+<button class="lang-btn" onclick="openPicker('A')" title="Change language" aria-label="Change language for Person A">🌐</button>
+</div>
+</div>
 <div class="text-fallback" id="tfA">
 <div class="tf-row">
 <textarea class="tf-input" id="tfInputA" placeholder="Type your message (A)…" rows="1"></textarea>
@@ -249,28 +242,28 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <div class="tf-hint">⌨️ Text mode — mic not available in this browser</div>
 </div>
 
-    <div class="divider"><div class="swap-pill" onclick="swapLangs()" role="button" aria-label="Swap languages between Person A and B" tabindex="0">⇄ swap</div></div>
+<div class="divider"><div class="swap-pill" onclick="swapLangs()" role="button" aria-label="Swap languages between Person A and B" tabindex="0">⇄ swap</div></div>
 
-    <div class="person flipped" id="personB">
-      <div class="tts-indicator">🔊 SPEAKING</div>
-      <div class="person-hdr">
-        <div class="avatar av-b">B</div>
-        <div class="pinfo">
-          <div class="pname">Person B</div>
-          <div class="plang" id="langLblB">🇺🇸 English</div>
-        </div>
-        <div class="pstatus"><div class="sdot" id="dotB"></div><span id="staB">Idle</span></div>
-      </div>
-      <div class="speech-box" id="boxB"><div class="ph">Tap mic to speak…</div></div>
-      <div class="mic-wrap">
-        <div class="vol-bars" id="volB"></div>
-        <div class="mic-outer" id="outerB">
-          <div class="ring"></div><div class="ring"></div>
-          <button class="mic-btn" id="micB" onclick="toggleMic('B')" aria-label="Microphone for Person B">🎙️</button>
-        </div>
-        <button class="lang-btn" onclick="openPicker('B')" title="Change language" aria-label="Change language for Person B">🌐</button>
-      </div>
-    </div>
+<div class="person flipped" id="personB">
+<div class="tts-indicator">🔊 SPEAKING</div>
+<div class="person-hdr">
+<div class="avatar av-b">B</div>
+<div class="pinfo">
+<div class="pname">Person B</div>
+<div class="plang" id="langLblB">🇺🇸 English</div>
+</div>
+<div class="pstatus"><div class="sdot" id="dotB"></div><span id="staB">Idle</span></div>
+</div>
+<div class="speech-box" id="boxB"><div class="ph">Tap mic to speak…</div></div>
+<div class="mic-wrap">
+<div class="vol-bars" id="volB"></div>
+<div class="mic-outer" id="outerB">
+<div class="ring"></div><div class="ring"></div>
+<button class="mic-btn" id="micB" onclick="toggleMic('B')" aria-label="Microphone for Person B">🎙️</button>
+</div>
+<button class="lang-btn" onclick="openPicker('B')" title="Change language" aria-label="Change language for Person B">🌐</button>
+</div>
+</div>
 <div class="text-fallback" id="tfB">
 <div class="tf-row">
 <textarea class="tf-input" id="tfInputB" placeholder="Type your message (B)…" rows="1"></textarea>
@@ -279,21 +272,18 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <div class="tf-hint">⌨️ Text mode — mic not available in this browser</div>
 </div>
 
-  </div>
+</div>
 </div>
 
 <!-- REMOTE CALL -->
 <div id="callMode" style="flex:1;overflow-y:auto;padding:14px;gap:12px;display:none;flex-direction:column;">
 
-<!-- STEP 1: Room Connect -->
 <div class="room-panel" id="roomConnectPanel">
 <div class="room-status">
 <div class="room-dot" id="roomDot"></div>
 <div class="room-label" id="roomLabel">Not connected</div>
 <span class="rtc-badge" id="rtcBadge" style="display:none">⚡ WebRTC</span>
 </div>
-
-<!-- Create room -->
 <div id="createSection">
 <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Your Room Code</div>
 <div class="room-code-display" id="roomCodeDisplay" onclick="copyRoomCode()" title="Tap to copy">——————</div>
@@ -302,21 +292,16 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <button class="room-btn create" id="btnCreate" onclick="createRoom()">🔑 Create Room</button>
 </div>
 </div>
-
-<!-- Join room -->
 <div id="joinSection" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
 <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Or Join Existing Room</div>
 <input class="room-input" id="joinCodeInput" maxlength="6" placeholder="XXXXXX" oninput="this.value=this.value.toUpperCase()"/>
 <button class="room-btn join" id="btnJoin" onclick="joinRoom()">🔗 Join Room</button>
 </div>
-
-<!-- Leave button (shown when connected) -->
 <div id="leaveSection" style="display:none;margin-top:10px;">
 <button class="room-btn leave" onclick="leaveRoom()">✕ Disconnect</button>
 </div>
 </div>
 
-<!-- STEP 2: Language Setup -->
 <div class="card">
 <div class="section-title">My Language Setup</div>
 <div style="margin-top:4px;">
@@ -329,7 +314,6 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 </div>
 </div>
 
-<!-- STEP 3: Speak -->
 <div class="card">
 <div class="section-title">Speak</div>
 <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0;">
@@ -349,7 +333,6 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 </div>
 </div>
 
-<!-- STEP 4: Live conversation -->
 <div class="dual-panels">
 <div class="mini-panel">
 <div class="mini-head" id="callOrigHead">YOU SAID</div>
@@ -361,7 +344,6 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 </div>
 </div>
 
-<!-- STEP 5: Peer messages (what the other person is saying) -->
 <div id="peerMsgSection" style="display:none;">
 <div class="section-title">Other Person</div>
 <div class="peer-msgs" id="peerMsgList"><div class="empty-h">Waiting for messages…</div></div>
@@ -369,1062 +351,529 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 
 </div>
 
-</div><!-- end .main -->
+</div>
 
 <!-- LANG PICKER -->
 <div class="sheet-overlay hidden" id="langSheet" onclick="closePicker(event)">
-  <div class="sheet" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Select language">
-    <div class="sheet-hd" id="sheetHd">SELECT LANGUAGE</div>
-    <input class="sheet-search" id="lsearch" placeholder="Search…" oninput="filterLangs()"/>
-    <div class="lang-grid" id="lgrid"></div>
-  </div>
+<div class="sheet" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Select language">
+<div class="sheet-hd" id="sheetHd">SELECT LANGUAGE</div>
+<input class="sheet-search" id="lsearch" placeholder="Search…" oninput="filterLangs()"/>
+<div class="lang-grid" id="lgrid"></div>
+</div>
 </div>
 
 <!-- HISTORY -->
 <div class="sheet-overlay hidden" id="histSheet" onclick="closeHist(event)">
-  <div class="hist-sheet" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Conversation history">
-    <div class="hist-hd">
-      <div class="hist-title">📜 HISTORY</div>
-      <div style="display:flex;gap:6px;">
-        <button class="xbtn" onclick="exportHistory()" title="Export" aria-label="Export conversation history">⬇</button>
-        <button class="xbtn" onclick="closeHist()" aria-label="Close history">✕</button>
-      </div>
-    </div>
-    <div class="hlist" id="hlist"><div class="empty-h">No conversation yet</div></div>
-  </div>
+<div class="hist-sheet" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Conversation history">
+<div class="hist-hd">
+<div class="hist-title">📜 HISTORY</div>
+<div style="display:flex;gap:6px;">
+<button class="xbtn" onclick="exportHistory()" title="Export" aria-label="Export conversation history">⬇</button>
+<button class="xbtn" onclick="closeHist()" aria-label="Close history">✕</button>
 </div>
-setVol(id,0,'');}
+</div>
+<div class="hlist" id="hlist"><div class="empty-h">No conversation yet</div></div>
+</div>
+</div>
+<script>
+// ── LANGUAGE TABLE ──
+var LANGS=[
+{code:'hi-IN',out:'hi',flag:'🇮🇳',name:'Hindi'},
+{code:'en-US',out:'en',flag:'🇺🇸',name:'English'},
+{code:'es-ES',out:'es',flag:'🇪🇸',name:'Spanish'},
+{code:'fr-FR',out:'fr',flag:'🇫🇷',name:'French'},
+{code:'de-DE',out:'de',flag:'🇩🇪',name:'German'},
+{code:'it-IT',out:'it',flag:'🇮🇹',name:'Italian'},
+{code:'pt-BR',out:'pt',flag:'🇧🇷',name:'Portuguese'},
+{code:'ru-RU',out:'ru',flag:'🇷🇺',name:'Russian'},
+{code:'zh-CN',out:'zh',flag:'🇨🇳',name:'Chinese (Simplified)'},
+{code:'zh-TW',out:'zh-TW',flag:'🇹🇼',name:'Chinese (Traditional)'},
+{code:'ja-JP',out:'ja',flag:'🇯🇵',name:'Japanese'},
+{code:'ko-KR',out:'ko',flag:'🇰🇷',name:'Korean'},
+{code:'ar-SA',out:'ar',flag:'🇸🇦',name:'Arabic'},
+{code:'tr-TR',out:'tr',flag:'🇹🇷',name:'Turkish'},
+{code:'nl-NL',out:'nl',flag:'🇳🇱',name:'Dutch'},
+{code:'pl-PL',out:'pl',flag:'🇵🇱',name:'Polish'},
+{code:'sv-SE',out:'sv',flag:'🇸🇪',name:'Swedish'},
+{code:'da-DK',out:'da',flag:'🇩🇰',name:'Danish'},
+{code:'fi-FI',out:'fi',flag:'🇫🇮',name:'Finnish'},
+{code:'nb-NO',out:'no',flag:'🇳🇴',name:'Norwegian'},
+{code:'cs-CZ',out:'cs',flag:'🇨🇿',name:'Czech'},
+{code:'sk-SK',out:'sk',flag:'🇸🇰',name:'Slovak'},
+{code:'ro-RO',out:'ro',flag:'🇷🇴',name:'Romanian'},
+{code:'hu-HU',out:'hu',flag:'🇭🇺',name:'Hungarian'},
+{code:'uk-UA',out:'uk',flag:'🇺🇦',name:'Ukrainian'},
+{code:'el-GR',out:'el',flag:'🇬🇷',name:'Greek'},
+{code:'bg-BG',out:'bg',flag:'🇧🇬',name:'Bulgarian'},
+{code:'he-IL',out:'he',flag:'🇮🇱',name:'Hebrew'},
+{code:'id-ID',out:'id',flag:'🇮🇩',name:'Indonesian'},
+{code:'ms-MY',out:'ms',flag:'🇲🇾',name:'Malay'},
+{code:'th-TH',out:'th',flag:'🇹🇭',name:'Thai'},
+{code:'vi-VN',out:'vi',flag:'🇻🇳',name:'Vietnamese'},
+{code:'bn-BD',out:'bn',flag:'🇧🇩',name:'Bengali'},
+{code:'ta-IN',out:'ta',flag:'🇮🇳',name:'Tamil'},
+{code:'te-IN',out:'te',flag:'🇮🇳',name:'Telugu'},
+{code:'mr-IN',out:'mr',flag:'🇮🇳',name:'Marathi'},
+{code:'gu-IN',out:'gu',flag:'🇮🇳',name:'Gujarati'},
+{code:'kn-IN',out:'kn',flag:'🇮🇳',name:'Kannada'},
+{code:'ml-IN',out:'ml',flag:'🇮🇳',name:'Malayalam'},
+{code:'pa-IN',out:'pa',flag:'🇮🇳',name:'Punjabi'},
+{code:'ur-PK',out:'ur',flag:'🇵🇰',name:'Urdu'},
+{code:'fa-IR',out:'fa',flag:'🇮🇷',name:'Persian'},
+{code:'sw-KE',out:'sw',flag:'🇰🇪',name:'Swahili'},
+{code:'af-ZA',out:'af',flag:'🇿🇦',name:'Afrikaans'},
+{code:'ca-ES',out:'ca',flag:'🏴󠁥󠁳󠁣󠁴󠁿',name:'Catalan'},
+{code:'hr-HR',out:'hr',flag:'🇭🇷',name:'Croatian'},
+{code:'sr-RS',out:'sr',flag:'🇷🇸',name:'Serbian'},
+{code:'lt-LT',out:'lt',flag:'🇱🇹',name:'Lithuanian'},
+{code:'lv-LV',out:'lv',flag:'🇱🇻',name:'Latvian'},
+{code:'et-EE',out:'et',flag:'🇪🇪',name:'Estonian'},
+{code:'sq-AL',out:'sq',flag:'🇦🇱',name:'Albanian'},
+{code:'mk-MK',out:'mk',flag:'🇲🇰',name:'Macedonian'},
+{code:'sl-SI',out:'sl',flag:'🇸🇮',name:'Slovenian'},
+{code:'az-AZ',out:'az',flag:'🇦🇿',name:'Azerbaijani'},
+{code:'ka-GE',out:'ka',flag:'🇬🇪',name:'Georgian'},
+{code:'hy-AM',out:'hy',flag:'🇦🇲',name:'Armenian'},
+{code:'is-IS',out:'is',flag:'🇮🇸',name:'Icelandic'},
+{code:'mt-MT',out:'mt',flag:'🇲🇹',name:'Maltese'},
+{code:'cy-GB',out:'cy',flag:'🏴󠁧󠁢󠁷󠁬󠁳󠁿',name:'Welsh'},
+{code:'ga-IE',out:'ga',flag:'🇮🇪',name:'Irish'},
+{code:'eu-ES',out:'eu',flag:'🏴󠁥󠁳󠁰󠁶󠁿',name:'Basque'},
+{code:'gl-ES',out:'gl',flag:'🇪🇸',name:'Galician'},
+{code:'am-ET',out:'am',flag:'🇪🇹',name:'Amharic'},
+{code:'ne-NP',out:'ne',flag:'🇳🇵',name:'Nepali'},
+{code:'si-LK',out:'si',flag:'🇱🇰',name:'Sinhala'},
+{code:'my-MM',out:'my',flag:'🇲🇲',name:'Burmese'},
+{code:'km-KH',out:'km',flag:'🇰🇭',name:'Khmer'},
+{code:'lo-LA',out:'lo',flag:'🇱🇦',name:'Lao'},
+{code:'mn-MN',out:'mn',flag:'🇲🇳',name:'Mongolian'},
+{code:'uz-UZ',out:'uz',flag:'🇺🇿',name:'Uzbek'},
+{code:'kk-KZ',out:'kk',flag:'🇰🇿',name:'Kazakh'},
+{code:'tg-TJ',out:'tg',flag:'🇹🇯',name:'Tajik'},
+{code:'ky-KG',out:'ky',flag:'🇰🇬',name:'Kyrgyz'},
+{code:'tk-TM',out:'tk',flag:'🇹🇲',name:'Turkmen'},
+{code:'tt-RU',out:'tt',flag:'🇷🇺',name:'Tatar'},
+{code:'be-BY',out:'be',flag:'🇧🇾',name:'Belarusian'},
+{code:'bs-BA',out:'bs',flag:'🇧🇦',name:'Bosnian'},
+{code:'lb-LU',out:'lb',flag:'🇱🇺',name:'Luxembourgish'},
+{code:'eo',out:'eo',flag:'🌍',name:'Esperanto'}
+];
+
+var TTS={
+'hi':'hi-IN','en':'en-US','es':'es-ES','fr':'fr-FR','de':'de-DE',
+'it':'it-IT','pt':'pt-BR','ru':'ru-RU','zh':'zh-CN','ja':'ja-JP',
+'ko':'ko-KR','ar':'ar-SA','tr':'tr-TR','nl':'nl-NL','pl':'pl-PL',
+'sv':'sv-SE','da':'da-DK','fi':'fi-FI','cs':'cs-CZ','sk':'sk-SK',
+'ro':'ro-RO','hu':'hu-HU','uk':'uk-UA','el':'el-GR','bg':'bg-BG',
+'he':'he-IL','id':'id-ID','ms':'ms-MY','th':'th-TH','vi':'vi-VN',
+'bn':'bn-BD','ta':'ta-IN','te':'te-IN','mr':'mr-IN','gu':'gu-IN',
+'kn':'kn-IN','ml':'ml-IN','pa':'pa-IN','ur':'ur-PK','fa':'fa-IR',
+'sw':'sw-KE','af':'af-ZA','hr':'hr-HR','sr':'sr-RS','lt':'lt-LT',
+'lv':'lv-LV','et':'et-EE','sq':'sq-AL','sl':'sl-SI','ka':'ka-GE',
+'hy':'hy-AM','is':'is-IS','mt':'mt-MT','cy':'cy-GB','ga':'ga-IE',
+'am':'am-ET','ne':'ne-NP','si':'si-LK','my':'my-MM','km':'km-KH',
+'mn':'mn-MN','uz':'uz-UZ','kk':'kk-KZ','be':'be-BY','bs':'bs-BA'
+};
+
+// ── GLOBAL STATE ──
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
+var currentMode='face';
+var activePicker=null;
+var history=[];
+
+var st={
+A:{lang:LANGS[0],rec:null,stream:null,actx:null,vraf:null,listening:false},
+B:{lang:LANGS[1],rec:null,stream:null,actx:null,vraf:null,listening:false}
+};
+
+var callSt={
+myLang:LANGS[0],theirLang:LANGS[1],
+rec:null,stream:null,actx:null,vraf:null,
+listening:false,ttsPlaying:false
+};
+
+// ── VOLUME BARS ──
+function setVol(id,v,col){
+var c=document.getElementById(id);
+if(!c)return;
+if(!c.children.length){
+for(var i=0;i<5;i++){var b=document.createElement('div');b.className='vb';c.appendChild(b);}
+}
+var bars=c.children;
+var levels=[0.3,0.6,1.0,0.6,0.3];
+var norm=Math.min(v/80,1);
+for(var i=0;i<bars.length;i++){
+var h=Math.max(3,levels[i]*norm*14+2);
+bars[i].style.height=h+'px';
+bars[i].style.background=norm>0.1?col:'rgba(0,200,255,0.12)';
+}
+}
+function resetVol(id){setVol(id,0,'');}
 
 // ── STATUS ──
 function ss(msg,cls){var e=document.getElementById('sb');e.textContent=msg;e.className=cls||'';}
 
 // ── LABELS ──
 function updateLabels(){
-  document.getElementById('langLblA').textContent=st.A.lang.flag+' '+st.A.lang.name;
-  document.getElementById('langLblB').textContent=st.B.lang.flag+' '+st.B.lang.name;
+document.getElementById('langLblA').textContent=st.A.lang.flag+' '+st.A.lang.name;
+document.getElementById('langLblB').textContent=st.B.lang.flag+' '+st.B.lang.name;
 }
 updateLabels();
 
 function updateCallLabels(){
-  var ml=document.getElementById('callMyLang');
-  var tl=document.getElementById('callTheirLang');
-  callSt.myLang=LANGS.find(function(l){return l.code===ml.value;})||LANGS[1];
-  callSt.theirLang=LANGS.find(function(l){return l.out===tl.value;})||LANGS[0];
-  document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.name.toUpperCase()+')';
-  document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
+var ml=document.getElementById('callMyLang');
+var tl=document.getElementById('callTheirLang');
+callSt.myLang=LANGS.find(function(l){return l.code===ml.value;})||LANGS[0];
+callSt.theirLang=LANGS.find(function(l){return l.out===tl.value;})||LANGS[1];
+document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.name.toUpperCase()+')';
+document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
 saveCallLangs();
 }
 
 function populateCallSelects(){
-  var ml=document.getElementById('callMyLang');
-  var tl=document.getElementById('callTheirLang');
-  var seen={};
-  LANGS.forEach(function(l){
-    if(!seen[l.code]){
-      seen[l.code]=1;
-      var o=document.createElement('option');
-      o.value=l.code;o.textContent=l.flag+' '+l.name;
-      if(l.code==='hi-IN')o.selected=true;
-      ml.appendChild(o);
-    }
-    var o2=document.createElement('option');
-    o2.value=l.out;o2.textContent=l.flag+' '+l.name;
-    if(l.out==='en')o2.selected=true;
-    tl.appendChild(o2);
-  });
-  updateCallLabels();
+var ml=document.getElementById('callMyLang');
+var tl=document.getElementById('callTheirLang');
+var seen={};
+LANGS.forEach(function(l){
+if(!seen[l.code]){
+seen[l.code]=1;
+var o=document.createElement('option');
+o.value=l.code;o.textContent=l.flag+' '+l.name;
+if(l.code==='hi-IN')o.selected=true;
+ml.appendChild(o);
+}
+var o2=document.createElement('option');
+o2.value=l.out;o2.textContent=l.flag+' '+l.name;
+if(l.out==='en')o2.selected=true;
+tl.appendChild(o2);
+});
+updateCallLabels();
 }
 populateCallSelects();
 loadCallLangs();
 
-// ── ROLE (call mode) ──
-function setRole(r){
-  callRole=r;
-  document.getElementById('roleA').className='role-btn'+(r==='A'?' sel-a':'');
-  document.getElementById('roleB').className='role-btn'+(r==='B'?' sel-b':'');
-}
-
 // ── MODE SWITCH ──
 function switchMode(m){
-  currentMode=m;
-  document.getElementById('tab-face').className='mtab'+(m==='face'?' on':'');
-  document.getElementById('tab-call').className='mtab'+(m==='call'?' on':'');
-  document.getElementById('faceMode').style.display=m==='face'?'flex':'none';
-  document.getElementById('callMode').style.display=m==='call'?'flex':'none';
+currentMode=m;
+var tf=document.getElementById('tab-face');
+var tc=document.getElementById('tab-call');
+tf.className='mtab'+(m==='face'?' on':'');
+tf.setAttribute('aria-selected',m==='face'?'true':'false');
+tc.className='mtab'+(m==='call'?' on':'');
+tc.setAttribute('aria-selected',m==='call'?'true':'false');
+document.getElementById('faceMode').style.display=m==='face'?'flex':'none';
+document.getElementById('callMode').style.display=m==='call'?'flex':'none';
 }
 
-// ── SWAP (face mode) ──
+// ── SWAP ──
 function swapLangs(){
-  var t=st.A.lang;st.A.lang=st.B.lang;st.B.lang=t;
-  updateLabels();ss('Languages swapped!','ok');
+var t=st.A.lang;st.A.lang=st.B.lang;st.B.lang=t;
+updateLabels();saveLangs();ss('Languages swapped!','ok');
 }
-
-// ── TRANSLATE WATCHDOG ──
-// Wraps doTranslate with a hard 12-second deadline.
-// If translation hangs (network drop mid-request), resolves with a notice
-// instead of leaving the mic frozen indefinitely.
-async function doTranslateSafe(text, from, to){
-  var timeout = new Promise(function(resolve){
-    setTimeout(function(){
-      resolve('[Translation timed out — check your connection]');
-    }, 12000);
-  });
-  return Promise.race([doTranslate(text, from, to), timeout]);
-}
-
-// ── TRANSLATE ──
-// Robust translation with timeout, retry, and fallback chain:
-// 1st: MyMemory (free, 1000 words/day per IP)
-// 2nd: LibreTranslate public mirror (free, no key)
-// 3rd: Return original text with a clear notice
-
-var LIBRE_MIRRORS = [
-  'https://libretranslate.com',
-  'https://translate.argosopentech.com',
-  'https://translate.terraprint.co'
+// ── TRANSLATE ENGINE ──
+var LIBRE_MIRRORS=[
+'https://libretranslate.com',
+'https://translate.argosopentech.com',
+'https://translate.terraprint.co'
 ];
 
 function fetchWithTimeout(url,opts,ms){
-  var ctrl=new AbortController();
-  var timer=setTimeout(function(){ctrl.abort();},ms||8000);
-  return fetch(url,Object.assign({},opts,{signal:ctrl.signal}))
-    .finally(function(){clearTimeout(timer);});
+var ctrl=new AbortController();
+var timer=setTimeout(function(){ctrl.abort();},ms||8000);
+return fetch(url,Object.assign({},opts,{signal:ctrl.signal}))
+.finally(function(){clearTimeout(timer);});
 }
 
 async function tryMyMemory(text,f,t){
-  var url='https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair='+f+'|'+t;
-  var r=await fetchWithTimeout(url,{},8000);
-  var d=await r.json();
-  if(d.responseStatus===200&&d.responseData&&d.responseData.translatedText&&
-     d.responseData.translatedText!==text){
-    // MyMemory returns the original when rate-limited (429 disguised as 200)
-    if(d.responseStatus===200&&d.quotaFinished){throw new Error('quota');}
-    return d.responseData.translatedText;
-  }
-  if(d.responseStatus===429||d.quotaFinished)throw new Error('quota');
-  throw new Error('bad response');
+var url='https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair='+f+'|'+t;
+var r=await fetchWithTimeout(url,{},8000);
+var d=await r.json();
+if(d.responseStatus===200&&d.responseData&&d.responseData.translatedText&&
+d.responseData.translatedText!==text){
+if(d.quotaFinished)throw new Error('quota');
+return d.responseData.translatedText;
+}
+if(d.responseStatus===429||d.quotaFinished)throw new Error('quota');
+throw new Error('bad response');
 }
 
 async function tryLibreTranslate(text,f,t){
-  // Try each public mirror in order
-  var lastErr;
-  for(var i=0;i<LIBRE_MIRRORS.length;i++){
-    try{
-      var r=await fetchWithTimeout(LIBRE_MIRRORS[i]+'/translate',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({q:text,source:f,target:t,format:'text',api_key:''})
-      },8000);
-      var d=await r.json();
-      if(d.translatedText&&d.translatedText!==text)return d.translatedText;
-      throw new Error('empty');
-    }catch(e){lastErr=e;}
-  }
-  throw lastErr||new Error('all libre mirrors failed');
+var lastErr;
+for(var i=0;i<LIBRE_MIRRORS.length;i++){
+try{
+var r=await fetchWithTimeout(LIBRE_MIRRORS[i]+'/translate',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({q:text,source:f,target:t,format:'text',api_key:''})
+},8000);
+var d=await r.json();
+if(d.translatedText&&d.translatedText!==text)return d.translatedText;
+throw new Error('empty');
+}catch(e){lastErr=e;}
+}
+throw lastErr||new Error('all libre mirrors failed');
 }
 
 async function doTranslate(text,from,to){
-  var f=from.split('-')[0],t=to.split('-')[0];
-  if(f===t)return text;
-  // --- Try 1: MyMemory ---
-  try{
-    var result=await tryMyMemory(text,f,t);
-    return result;
-  }catch(e1){
-    var isQuota=(e1.message==='quota');
-    ss(isQuota?'⚠️ MyMemory quota hit — trying fallback…':'⚠️ Retrying translation…','wrn');
-    // --- Try 2: MyMemory retry (only if not quota error) ---
-    if(!isQuota){
-      try{
-        var result2=await tryMyMemory(text,f,t);
-        return result2;
-      }catch(e2){}
-    }
-    // --- Try 3: LibreTranslate mirrors ---
-    try{
-      ss('⚠️ Using fallback translator…','wrn');
-      var result3=await tryLibreTranslate(text,f,t);
-      return result3;
-    }catch(e3){
-      // --- All failed: return original with notice ---
-      ss('❌ Translation failed — showing original text','err');
-      return '[Could not translate] '+text;
-    }
-  }
+var f=from.split('-')[0],t=to.split('-')[0];
+if(f===t)return text;
+try{
+return await tryMyMemory(text,f,t);
+}catch(e1){
+var isQuota=(e1.message==='quota');
+ss(isQuota?'⚠️ MyMemory quota hit — trying fallback…':'⚠️ Retrying translation…','wrn');
+if(!isQuota){
+try{return await tryMyMemory(text,f,t);}catch(e2){}
+}
+try{
+ss('⚠️ Using fallback translator…','wrn');
+return await tryLibreTranslate(text,f,t);
+}catch(e3){
+ss('❌ Translation failed — showing original text','err');
+return '[Could not translate] '+text;
+}
+}
 }
 
+// Watchdog: 12-second hard deadline
+async function doTranslateSafe(text,from,to){
+var timeout=new Promise(function(resolve){
+setTimeout(function(){resolve('[Translation timed out — check your connection]');},12000);
+});
+return Promise.race([doTranslate(text,from,to),timeout]);
+}
+
+// ── STREAMING TRANSLATION ──
+// Debounce timer: translate every 1.5s of new interim results
+// Shows live translation bubble that updates as the user speaks
+var _streamTimers={A:null,B:null,call:null};
+var _streamEls={A:null,B:null,call:null};
+
+function streamTranslate(p,interimText,fromLang,toLang,targetBoxId){
+// Clear existing debounce
+if(_streamTimers[p])clearTimeout(_streamTimers[p]);
+var f=fromLang.split('-')[0];
+var t=toLang.split('-')[0];
+if(f===t){
+// Same language — just show raw interim
+_updateStreamEl(targetBoxId,p,interimText,'(same language)');
+return;
+}
+// Show "translating…" placeholder immediately
+_updateStreamEl(targetBoxId,p,interimText,'…');
+// Debounce 800ms then fire translation
+_streamTimers[p]=setTimeout(async function(){
+if(!interimText)return;
+try{
+var result=await tryMyMemory(interimText,f,t);
+_updateStreamEl(targetBoxId,p,interimText,result);
+}catch(e){
+// Silent fail for streaming — final result will be authoritative
+}
+},800);
+}
+
+function _updateStreamEl(boxId,p,orig,trans){
+var box=document.getElementById(boxId);
+if(!box)return;
+if(!_streamEls[p]){
+var el=document.createElement('div');
+el.className='bubble streaming';
+box.appendChild(el);
+_streamEls[p]=el;
+}
+_streamEls[p].innerHTML='<span style="color:var(--muted);font-size:11px">'+esc(orig)+'</span>'+
+'<br><span style="color:var(--cyan)">⚡ '+esc(trans)+'</span>';
+box.scrollTop=box.scrollHeight;
+}
+
+function clearStreamEl(p){
+if(_streamTimers[p]){clearTimeout(_streamTimers[p]);_streamTimers[p]=null;}
+if(_streamEls[p]){_streamEls[p].remove();_streamEls[p]=null;}
+}
 // ── TTS ENGINE ──
-// Accepts optional onDone callback fired when speech finishes
 function doSpeak(text,langOut,onDone){
-  if(!window.speechSynthesis||!text){if(onDone)onDone();return;}
-  var SS=window.speechSynthesis;
-  var ttsLang=TTS[langOut]||langOut;
-  SS.cancel();
-  function speak(){
-    var voices=SS.getVoices();
-    var voice=voices.find(function(v){return v.lang===ttsLang;})||
-              voices.find(function(v){return v.lang.startsWith(ttsLang.split('-')[0]);})||
-              voices.find(function(v){return v.lang.startsWith('en');});
-    var u=new SpeechSynthesisUtterance(text);
-    if(voice){u.voice=voice;u.lang=voice.lang;}else{u.lang=ttsLang;}
-    u.rate=0.95;u.pitch=1;u.volume=1;
-    u.onend=function(){if(onDone)onDone();};
-    u.onerror=function(e){
-      if(e.error==='interrupted'||e.error==='canceled'){if(onDone)onDone();return;}
-      ss('⚠️ Voice error: '+e.error,'wrn');
-      if(onDone)onDone();
-    };
-    try{SS.speak(u);}catch(err){if(onDone)onDone();}
-  }
-  if(SS.getVoices().length>0){speak();}
-  else{SS.onvoiceschanged=function(){speak();};setTimeout(speak,500);}
+if(!window.speechSynthesis||!text){if(onDone)onDone();return;}
+var SS=window.speechSynthesis;
+var ttsLang=TTS[langOut]||langOut;
+SS.cancel();
+function speak(){
+var voices=SS.getVoices();
+var voice=voices.find(function(v){return v.lang===ttsLang;})||
+voices.find(function(v){return v.lang.startsWith(ttsLang.split('-')[0]);})||
+voices.find(function(v){return v.lang.startsWith('en');});
+var u=new SpeechSynthesisUtterance(text);
+if(voice){u.voice=voice;u.lang=voice.lang;}else{u.lang=ttsLang;}
+u.rate=0.95;u.pitch=1;u.volume=1;
+u.onend=function(){if(onDone)onDone();};
+u.onerror=function(e){
+if(e.error==='interrupted'||e.error==='canceled'){if(onDone)onDone();return;}
+ss('⚠️ Voice error: '+e.error,'wrn');
+if(onDone)onDone();
+};
+try{SS.speak(u);}catch(err){if(onDone)onDone();}
 }
-
-// Chrome TTS keepalive
+if(SS.getVoices().length>0){speak();}
+else{SS.onvoiceschanged=function(){speak();};setTimeout(speak,500);}
+}
 setInterval(function(){
-  if(window.speechSynthesis&&!window.speechSynthesis.speaking)window.speechSynthesis.resume();
+if(window.speechSynthesis&&!window.speechSynthesis.speaking)window.speechSynthesis.resume();
 },5000);
 
-// ── FACE-TO-FACE: toggle mic ──
-// Simple: tap to start, tap to stop. No pendingSpeak intercept.
+// ── FACE-TO-FACE MIC ──
 function toggleMic(p){
-  if(st[p].listening)stopMic(p);else startMic(p);
+if(st[p].listening)stopMic(p);else startMic(p);
 }
 
 async function startMic(p){
-  if(!SR){activateFallback(p);ss('⚠️ Mic not available — text mode active','wrn');return;}
-  var other=p==='A'?'B':'A';
-  // Stop the other person's mic if active
-  if(st[other].listening)stopMic(other);
-  // Cancel any playing TTS
-  window.speechSynthesis&&window.speechSynthesis.cancel();
-  ss('🔐 Requesting microphone…','');
-  var s=st[p];
-  try{
-    s.stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-  }catch(err){
-    if(err.name==='NotAllowedError')ss('❌ Mic blocked — click 🔒 in address bar → Allow','err');
-    else if(err.name==='NotFoundError')ss('❌ No microphone found','err');
-    else ss('❌ Mic error: '+err.message,'err');
-    return;
-  }
-  // Volume analyser
-  try{
-    s.actx=new(window.AudioContext||window.webkitAudioContext)();
-    var an=s.actx.createAnalyser();an.fftSize=64;
-    s.actx.createMediaStreamSource(s.stream).connect(an);
-    var data=new Uint8Array(an.frequencyBinCount);
-    var volId='vol'+p,col=p==='A'?'#00c8ff':'#00ff9d';
-    function tick(){
-      if(!s.listening){resetVol(volId);return;}
-      an.getByteFrequencyData(data);
-      var avg=0;for(var i=0;i<data.length;i++)avg+=data[i];
-      setVol(volId,(avg/data.length)*1.4,col);
-      s.vraf=requestAnimationFrame(tick);
-    }
-    tick();
-  }catch(e){}
-  s.listening=true;
-  setMicUI(p,true);
-  ss('✅ Person '+p+' — speak in '+s.lang.flag+' '+s.lang.name,'ok');
-  startRec(p);
-}
-
-function startRec(p){
-  if(!st[p].listening)return;
-  var s=st[p];
-  var other=p==='A'?'B':'A';
-  s.rec=new SR();
-  s.rec.lang=s.lang.code;
-  s.rec.continuous=false;
-  s.rec.interimResults=true;
-  s.rec.maxAlternatives=1;
-
-  s.rec.onresult=async function(e){
-    var interim='',final='';
-    for(var i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
-      else interim+=e.results[i][0].transcript;
-    }
-    if(interim)showInterim(p,interim);
-    if(final){
-      clearInterim(p);
-      addBubble(p,final,'orig');
-      ss('⏳ Translating…','');
-      // Abort recognition while TTS plays to prevent feedback loop
-      try{s.rec.abort();}catch(ex){}
-      var trans=await doTranslateSafe(final,s.lang.out,st[other].lang.out);
-      addBubble(other,trans,'trans');
-      addHist('Person '+p,final,trans,st[other].lang);
-      // Show speaking-out indicator on OTHER person's panel
-      setPanelTTS(other,true);
-      ss('🔊 Speaking '+st[other].lang.flag+' '+st[other].lang.name+'…','ok');
-      doSpeak(trans,st[other].lang.out,function(){
-        // TTS done — resume listening for person p
-        setPanelTTS(other,false);
-        ss('✅ Done — Person '+p+' speak again or Person '+other+' respond','ok');
-        if(s.listening)setTimeout(function(){startRec(p);},200);
-      });
-    }
-  };
-
-  s.rec.onerror=function(e){
-    if(e.error==='no-speech'||e.error==='aborted')return;
-    if(e.error==='not-allowed'){ss('❌ Mic permission revoked','err');stopMic(p);return;}
-    ss('⚠️ '+e.error,'wrn');
-  };
-
-  // Only auto-restart on natural end if TTS is NOT playing
-  // (TTS callback handles restart after speech)
-  s.rec.onend=function(){
-    if(s.listening&&!window.speechSynthesis.speaking){
-      setTimeout(function(){startRec(p);},150);
-    }
-  };
-
-  try{s.rec.start();}catch(e){setTimeout(function(){startRec(p);},300);}
-}
-
-function stopMic(p){
-  var s=st[p];
-  s.listening=false;
-  if(s.rec){try{s.rec.abort();}catch(e){}s.rec=null;}
-  if(s.vraf){cancelAnimationFrame(s.vraf);s.vraf=null;}
-  if(s.stream){s.stream.getTracks().forEach(function(t){t.stop();});s.stream=null;}
-  if(s.actx){try{s.actx.close();}catch(e){}s.actx=null;}
-  resetVol('vol'+p);
-  setMicUI(p,false);
-  setPanelTTS(p,false);
-}
-
-function setMicUI(p,on){
-  var btn=document.getElementById('mic'+p);
-  var outer=document.getElementById('outer'+p);
-  var pel=document.getElementById('person'+p);
-  var dot=document.getElementById('dot'+p);
-  var sta=document.getElementById('sta'+p);
-  if(on){
-    btn.textContent='⏹️';
-    btn.className='mic-btn on-'+p.toLowerCase();
-    outer.classList.add('on');
-    pel.classList.add('listening');
-    dot.className='sdot go';
-    sta.textContent='Listening…';
-  }else{
-    btn.textContent='🎙️';
-    btn.className='mic-btn';
-    outer.classList.remove('on');
-    pel.classList.remove('listening','speaking-out');
-    dot.className='sdot';
-    sta.textContent='Idle';
-  }
-}
-
-function setPanelTTS(p,on){
-  var pel=document.getElementById('person'+p);
-  var dot=document.getElementById('dot'+p);
-  var sta=document.getElementById('sta'+p);
-  if(on){
-    pel.classList.add('speaking-out');
-    dot.className='sdot talk';
-    sta.textContent='Playing…';
-  }else{
-    pel.classList.remove('speaking-out');
-    if(!st[p].listening){dot.className='sdot';sta.textContent='Idle';}
-  }
-}
-
-// ── CALL MODE: WebRTC via PeerJS ──
-// Architecture:
-//   Person A: createRoom() → PeerJS gives a peer ID → display as 6-char room code
-//   Person B: joinRoom()   → connect(roomCode) → DataChannel opens
-//   On speech: translate locally → send {orig, trans, langOut} over DataChannel
-//   Receiver: display trans bubble + play TTS → no acoustic relay needed
-
-var rtcPeer   = null;   // PeerJS Peer instance
-var rtcConn   = null;   // DataConnection to the other device
-var rtcIsHost = false;  // true = created the room, false = joined
-
-// — Helpers —
-function rtcConnected(){ return rtcConn && rtcConn.open; }
-
-function setRoomUI(state){
-// state: 'idle' | 'hosting' | 'connecting' | 'connected'
-var dot   = document.getElementById('roomDot');
-var lbl   = document.getElementById('roomLabel');
-var badge = document.getElementById('rtcBadge');
-var leave = document.getElementById('leaveRow');
-var cBtn  = document.getElementById('createBtn');
-var jBtn  = document.getElementById('joinBtn');
-var jInput= document.getElementById('joinCodeInput');
-var logCard = document.getElementById('peerLogCard');
-if(state==='idle'){
-dot.className='room-dot';
-lbl.textContent='Not connected';
-badge.style.display='none';
-leave.style.display='none';
-logCard.style.display='none';
-if(cBtn)cBtn.disabled=false;
-if(jBtn)jBtn.disabled=false;
-if(jInput)jInput.disabled=false;
-}else if(state==='hosting'){
-dot.className='room-dot connecting';
-lbl.textContent='Waiting for peer…';
-badge.style.display='none';
-leave.style.display='block';
-if(cBtn)cBtn.disabled=true;
-if(jBtn)jBtn.disabled=true;
-if(jInput)jInput.disabled=true;
-}else if(state==='connecting'){
-dot.className='room-dot connecting';
-lbl.textContent='Connecting…';
-badge.style.display='none';
-leave.style.display='block';
-if(cBtn)cBtn.disabled=true;
-if(jBtn)jBtn.disabled=true;
-if(jInput)jInput.disabled=true;
-}else if(state==='connected'){
-dot.className='room-dot connected';
-lbl.textContent='Connected — peer-to-peer';
-badge.style.display='inline-flex';
-leave.style.display='block';
-logCard.style.display='block';
-if(cBtn)cBtn.disabled=true;
-if(jBtn)jBtn.disabled=true;
-if(jInput)jInput.disabled=true;
-}
-}
-
-function peerIdToCode(id){
-// PeerJS IDs are UUIDs; we show first 6 uppercase alphanum chars as the room code
-return id.replace(/-/g,'').toUpperCase().substring(0,6);
-}
-
-function addPeerMsg(who, orig, trans){
-var box = document.getElementById('peerMsgs');
-if(!box) return;
-var div = document.createElement('div');
-div.className = 'pmsg ' + (who==='me' ? 'sent' : 'recv');
-div.innerHTML = '<div class="pmsg-who">' + (who==='me' ? '🎤 You said' : '📥 They said') + '</div>' +
-'<div style="color:var(--muted);font-size:11px">' + esc(orig) + '</div>' +
-'<div style="margin-top:2px">' + esc(trans) + '</div>';
-box.appendChild(div);
-box.scrollTop = box.scrollHeight;
-}
-
-// — Create Room (host side) —
-function createRoom(){
-if(rtcPeer) rtcPeer.destroy();
-ss('📡 Creating room…','');
-try{
-rtcPeer = new Peer(undefined,{debug:0});
-}catch(e){
-ss('❌ PeerJS not loaded. Check your connection.','err');
-return;
-}
-rtcIsHost = true;
-
-rtcPeer.on('open', function(id){
-var code = peerIdToCode(id);
-// Store full peer ID mapped from short code
-rtcPeer._shortCode = code;
-rtcPeer._fullId = id;
-document.getElementById('myRoomCode').textContent = code;
-setRoomUI('hosting');
-ss('📡 Room ' + code + ' ready — share with other person','ok');
-});
-
-rtcPeer.on('connection', function(conn){
-rtcConn = conn;
-setupConn();
-ss('✅ Peer connected! Start speaking.','ok');
-setRoomUI('connected');
-});
-
-rtcPeer.on('error', function(err){
-ss('❌ RTC error: ' + err.type,'err');
-setRoomUI('idle');
-});
-}
-
-// — Join Room (guest side) —
-function joinRoom(){
-var input = document.getElementById('joinCodeInput');
-var code = (input ? input.value.trim().toUpperCase() : '');
-if(code.length < 6){ ss('⚠️ Enter the full 6-character room code','wrn'); return; }
-if(rtcPeer) rtcPeer.destroy();
-setRoomUI('connecting');
-ss('🔗 Connecting to room ' + code + '…','');
-rtcIsHost = false;
-
-try{
-rtcPeer = new Peer(undefined,{debug:0});
-}catch(e){
-ss('❌ PeerJS not loaded. Check your connection.','err');
-setRoomUI('idle');
-return;
-}
-
-rtcPeer.on('open', function(){
-// The host's full PeerJS ID starts with the 6 code chars (lowercased)
-// We need to look up the full ID. PeerJS allows connecting by full ID.
-// Since we only have 6 chars, we stored the full ID in the code display.
-// To handle this properly, we broadcast the full peer ID to the guest.
-// Solution: host encodes full peer ID differently — use the full UUID as room code
-// but display only first 6. Guest needs full ID. 
-// REVISED: show full peer ID as room code (copy on tap), display abbreviated.
-// But for UX we kept 6-char display. We need to rethink.
-// PRACTICAL FIX: the host's peer ID IS the room code (full UUID).
-// We'll take the 6-char code the guest enters and look it up via PeerJS lookup.
-// PeerJS /peers endpoint: https://0.peerjs.com:443/peerjs/peers
-// Fetch available peers and find one whose ID starts with our code.
-fetch('https://0.peerjs.com/peerjs/peers')
-.then(function(r){ return r.json(); })
-.then(function(peers){
-var match = peers.find(function(p){ return p.toUpperCase().startsWith(code.replace(/-/g,'').substring(0,6)); });
-if(!match){
-ss('❌ Room ' + code + ' not found. Check the code.','err');
-setRoomUI('idle');
-rtcPeer.destroy();
-return;
-}
-rtcConn = rtcPeer.connect(match, {reliable:true, serialization:'json'});
-setupConn();
-ss('⏳ Connecting to peer…','');
-})
-.catch(function(){
-// Fallback: treat the entered code as a full peer ID
-rtcConn = rtcPeer.connect(code, {reliable:true, serialization:'json'});
-setupConn();
-});
-});
-
-rtcPeer.on('error', function(err){
-ss('❌ RTC error: ' + err.type,'err');
-setRoomUI('idle');
-});
-}
-
-// — Setup DataConnection handlers —
-function setupConn(){
-if(!rtcConn) return;
-rtcConn.on('open', function(){
-setRoomUI('connected');
-ss('✅ Peer-to-peer connected! Start speaking.','ok');
-});
-rtcConn.on('data', function(data){
-// Incoming message from the other device
-if(data && data.trans){
-addPeerMsg('them', data.orig||'', data.trans);
-// Display in the callTrans panel and speak it
-document.getElementById('callOrig').textContent = data.orig || '';
-document.getElementById('callTrans').textContent = data.trans;
-var theirLang = callSt.theirLang;
-setPeerTTS(true);
-ss('🔊 Playing translation from peer…','ok');
-doSpeak(data.trans, data.langOut || theirLang.out, function(){
-setPeerTTS(false);
-ss('✅ Peer spoke — your turn','ok');
-});
-}
-});
-rtcConn.on('close', function(){
-ss('⚠️ Peer disconnected','wrn');
-setRoomUI('idle');
-rtcConn = null;
-});
-rtcConn.on('error', function(err){
-ss('❌ Connection error: ' + err,'err');
-});
-}
-
-function setPeerTTS(on){
-var lbl = document.getElementById('callMicLabel');
-if(on){
-if(lbl) lbl.textContent = '🔊 PEER SPEAKING…';
-}else{
-if(lbl) lbl.textContent = rtcConnected() ? 'CONNECTED — TAP TO SPEAK' : 'TAP TO SPEAK';
-}
-}
-
-// — Leave / cleanup —
-function leaveRoom(){
-if(rtcConn){ try{ rtcConn.close(); }catch(e){} rtcConn = null; }
-if(rtcPeer){ try{ rtcPeer.destroy(); }catch(e){} rtcPeer = null; }
-document.getElementById('myRoomCode').textContent = '——————';
-document.getElementById('joinCodeInput').value = '';
-document.getElementById('callMicLabel').textContent = 'TAP TO SPEAK';
-document.getElementById('callOrig').innerHTML = '<span class="mini-ph">Your speech…</span>';
-document.getElementById('callTrans').innerHTML = '<span class="mini-ph">Translation…</span>';
-document.getElementById('peerMsgs').innerHTML = '';
-setRoomUI('idle');
-ss('Disconnected — room closed','');
-}
-
-// Copy room code on tap
-document.addEventListener('DOMContentLoaded', function(){
-var codeEl = document.getElementById('myRoomCode');
-if(codeEl){
-codeEl.addEventListener('click', function(){
-var txt = codeEl.textContent.trim();
-if(txt && txt !== '——————'){
-navigator.clipboard.writeText(txt).then(function(){
-ss('📋 Room code copied!','ok');
-}).catch(function(){});
-}
-});
-}
-});
-
-// — Call mode mic (WebRTC-aware) —
-function toggleCallMic(){
-if(callSt.listening) stopCallMic(); else startCallMic();
-}
-
-async function startCallMic(){
-if(!SR){ activateFallback('call'); ss('⚠️ Mic not available — text mode active','wrn'); return; }
-window.speechSynthesis && window.speechSynthesis.cancel();
+if(!SR){activateFallback(p);ss('⚠️ Mic not available — text mode active','wrn');return;}
+var other=p==='A'?'B':'A';
+if(st[other].listening)stopMic(other);
+window.speechSynthesis&&window.speechSynthesis.cancel();
 ss('🔐 Requesting microphone…','');
+var s=st[p];
 try{
-callSt.stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+s.stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
 }catch(err){
-if(err.name==='NotAllowedError') ss('❌ Mic blocked — click 🔒 in address bar → Allow','err');
+if(err.name==='NotAllowedError')ss('❌ Mic blocked — click 🔒 in address bar → Allow','err');
+else if(err.name==='NotFoundError')ss('❌ No microphone found','err');
 else ss('❌ Mic error: '+err.message,'err');
 return;
 }
 try{
-callSt.actx = new(window.AudioContext||window.webkitAudioContext)();
-var an = callSt.actx.createAnalyser(); an.fftSize=64;
-callSt.actx.createMediaStreamSource(callSt.stream).connect(an);
-var data = new Uint8Array(an.frequencyBinCount);
+s.actx=new(window.AudioContext||window.webkitAudioContext)();
+var an=s.actx.createAnalyser();an.fftSize=64;
+s.actx.createMediaStreamSource(s.stream).connect(an);
+var data=new Uint8Array(an.frequencyBinCount);
+var volId='vol'+p,col=p==='A'?'#00c8ff':'#00ff9d';
 function tick(){
-if(!callSt.listening){ resetVol('volCall'); return; }
+if(!s.listening){resetVol(volId);return;}
 an.getByteFrequencyData(data);
-var avg=0; for(var i=0;i<data.length;i++) avg+=data[i];
-setVol('volCall',(avg/data.length)*1.4,'#00c8ff');
-callSt.vraf=requestAnimationFrame(tick);
+var avg=0;for(var i=0;i<data.length;i++)avg+=data[i];
+setVol(volId,(avg/data.length)*1.4,col);
+s.vraf=requestAnimationFrame(tick);
 }
 tick();
 }catch(e){}
-callSt.listening = true;
-var bm = document.getElementById('bigMic');
-bm.textContent='⏹️'; bm.className='big-mic-btn on';
-document.getElementById('bigOuter').classList.add('on');
-document.getElementById('callMicLabel').textContent = rtcConnected()
-? 'CONNECTED — LISTENING…'
-: 'LISTENING (no peer yet)…';
-ss('✅ Speaking '+callSt.myLang.flag+' '+callSt.myLang.name+' → '+callSt.theirLang.flag+' '+callSt.theirLang.name,'ok');
-startCallRec();
+s.listening=true;
+setMicUI(p,true);
+ss('✅ Person '+p+' — speak in '+s.lang.flag+' '+s.lang.name,'ok');
+startRec(p);
 }
 
-function startCallRec(){
-if(!callSt.listening) return;
-callSt.rec = new SR();
-callSt.rec.lang = callSt.myLang.code;
-callSt.rec.continuous = false;
-callSt.rec.interimResults = true;
-callSt.rec.maxAlternatives = 1;
+function startRec(p){
+if(!st[p].listening)return;
+var s=st[p];
+var other=p==='A'?'B':'A';
+s.rec=new SR();
+s.rec.lang=s.lang.code;
+s.rec.continuous=false;
+s.rec.interimResults=true;
+s.rec.maxAlternatives=1;
 
-callSt.rec.onresult = async function(e){
-var interim='', final='';
+s.rec.onresult=async function(e){
+var interim='',final='';
 for(var i=e.resultIndex;i<e.results.length;i++){
-if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+if(e.results[i].isFinal)final+=e.results[i][0].transcript;
 else interim+=e.results[i][0].transcript;
 }
-if(interim) document.getElementById('callOrig').textContent=interim;
+if(interim){
+showInterim(p,interim);
+// Streaming translation: show live partial translation in other person's panel
+streamTranslate(p,interim,s.lang.out,st[other].lang.out,'box'+other);
+}
 if(final){
-document.getElementById('callOrig').textContent=final;
-document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
+clearInterim(p);
+clearStreamEl(p);
+addBubble(p,final,'orig');
 ss('⏳ Translating…','');
-try{ callSt.rec.abort(); }catch(ex){}
-var trans = await doTranslateSafe(final, callSt.myLang.out, callSt.theirLang.out);
-document.getElementById('callTrans').textContent=trans;
-addHist('Me (call)',final,trans,callSt.theirLang);
-
-if(rtcConnected()){
-// Send to peer via WebRTC data channel
-rtcConn.send({orig:final, trans:trans, langOut:callSt.theirLang.out});
-addPeerMsg('me', final, trans);
-document.getElementById('callMicLabel').textContent='CONNECTED — SENT TO PEER';
-ss('✅ Translation sent to peer','ok');
-// Resume listening after short pause
-if(callSt.listening) setTimeout(function(){ startCallRec(); }, 500);
-}else{
-// No peer: fall back to acoustic relay (play TTS through mic)
-callSt.ttsPlaying=true;
-document.getElementById('callMicLabel').textContent='🔊 SPEAKING (acoustic relay)…';
-ss('🔊 No peer connected — playing aloud (acoustic relay)','wrn');
-doSpeak(trans, callSt.theirLang.out, function(){
-callSt.ttsPlaying=false;
-document.getElementById('callMicLabel').textContent='LISTENING — TAP TO STOP';
-ss('✅ Done — speak again','ok');
-if(callSt.listening) setTimeout(startCallRec, 200);
-});
-}
-}
-};
-
-callSt.rec.onerror = function(e){
-if(e.error==='no-speech'||e.error==='aborted') return;
-if(e.error==='not-allowed'){ ss('❌ Mic revoked','err'); stopCallMic(); return; }
-ss('⚠️ '+e.error,'wrn');
-};
-
-callSt.rec.onend = function(){
-if(callSt.listening && !window.speechSynthesis.speaking){
-setTimeout(startCallRec, 150);
-}
-};
-
-try{ callSt.rec.start(); }catch(e){ setTimeout(startCallRec,300); }
-}
-
-function stopCallMic(){
-callSt.listening=false;
-if(callSt.rec){ try{ callSt.rec.abort(); }catch(e){} callSt.rec=null; }
-if(callSt.vraf){ cancelAnimationFrame(callSt.vraf); callSt.vraf=null; }
-if(callSt.stream){ callSt.stream.getTracks().forEach(function(t){t.stop();}); callSt.stream=null; }
-if(callSt.actx){ try{ callSt.actx.close(); }catch(e){} callSt.actx=null; }
-resetVol('volCall');
-var bm=document.getElementById('bigMic');
-bm.textContent='🎤'; bm.className='big-mic-btn';
-document.getElementById('bigOuter').classList.remove('on');
-document.getElementById('callMicLabel').textContent = rtcConnected() ? 'CONNECTED — TAP TO SPEAK' : 'TAP TO SPEAK';
-ss('Stopped.','');
-}
-
-// ── BUBBLES ──
-var iEls={A:null,B:null};
-function showInterim(p,t){
-  var box=document.getElementById('box'+p);
-  if(!iEls[p]){var el=document.createElement('div');el.className='bubble interim';box.appendChild(el);iEls[p]=el;}
-  iEls[p].textContent=t;box.scrollTop=box.scrollHeight;
-}
-function clearInterim(p){if(iEls[p]){iEls[p].remove();iEls[p]=null;}}
-function addBubble(p,text,type){
-  var box=document.getElementById('box'+p);
-  var ph=box.querySelector('.ph');if(ph)ph.remove();
-  var el=document.createElement('div');
-  el.className='bubble '+type;el.textContent=text;
-  box.appendChild(el);box.scrollTop=box.scrollHeight;
-}
-
-// ── LANG PICKER ──
-function openPicker(p){
-  activePicker=p;
-  document.getElementById('sheetHd').textContent='PERSON '+p+' LANGUAGE';
-  document.getElementById('lsearch').value='';
-  renderGrid('');
-  document.getElementById('langSheet').classList.remove('hidden');
-  setTimeout(function(){document.getElementById('lsearch').focus();},100);
-}
-function closePicker(e){
-  if(!e||e.target===document.getElementById('langSheet'))
-    document.getElementById('langSheet').classList.add('hidden');
-}
-function filterLangs(){renderGrid(document.getElementById('lsearch').value);}
-function renderGrid(q){
-  var g=document.getElementById('lgrid');
-  var sel=activePicker?st[activePicker].lang.code:'';
-  var seen={};
-  var filtered=LANGS.filter(function(l){
-    if(seen[l.code])return false;seen[l.code]=1;
-    return !q||l.name.toLowerCase().indexOf(q.toLowerCase())>=0;
-  });
-  g.innerHTML=filtered.map(function(l){
-    return '<div class="lopt'+(l.code===sel?' sel':'')+'" onclick="pickLang(\''+l.code+'\')">'+l.flag+' '+l.name+'</div>';
-  }).join('');
-}
-function pickLang(code){
-  var l=LANGS.find(function(x){return x.code===code;});
-  if(!l||!activePicker)return;
-  st[activePicker].lang=l;
-  updateLabels();
-saveLangs();
-  document.getElementById('langSheet').classList.add('hidden');
-  ss('Language updated!','ok');
-}
-
-// ── HISTORY ──
-function addHist(who,orig,trans,targetLang){
-  var t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  history.unshift({who:who,orig:orig,trans:trans,tl:targetLang,time:t});
-saveHistory();
-}
-function showHistory(){
-  var list=document.getElementById('hlist');
-  if(!history.length){
-    list.innerHTML='<div class="empty-h">No conversation yet</div>';
-  }else{
-    list.innerHTML=history.map(function(h){
-      return '<div class="hi">'+
-        '<div class="hi-who">'+h.who+' → '+(h.tl?h.tl.flag+' '+h.tl.name:'')+'</div>'+
-        '<div class="hi-o">'+esc(h.orig)+'</div>'+
-        '<div class="hi-t">'+esc(h.trans)+'</div>'+
-        '<div class="hi-m">'+h.time+'</div>'+
-        '</div>';
-    }).join('');
-  }
-  document.getElementById('histSheet').classList.remove('hidden');
-}
-function closeHist(e){
-  if(!e||e.target===document.getElementById('histSheet'))
-    document.getElementById('histSheet').classList.add('hidden');
-}
-function exportHistory(){
-  if(!history.length){alert('No history to export.');return;}
-  var txt=history.map(function(h){
-    return '['+h.time+'] '+h.who+'\nOriginal:    '+h.orig+'\nTranslated:  '+h.trans+'\n';
-  }).join('\n');
-  var blob=new Blob([txt],{type:'text/plain'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='chatterbox-history-'+new Date().toISOString().slice(0,10)+'.txt';
-  a.click();
-}
-
-// ── CLEAR ALL ──
-function clearAll(){
-  ['A','B'].forEach(function(p){
-    if(st[p].listening)stopMic(p);
-    document.getElementById('box'+p).innerHTML='<div class="ph">Tap mic to speak…</div>';
-  });
-  if(callSt.listening)stopCallMic();
-if(rtcConn||rtcPeer)leaveRoom();
-  document.getElementById('callOrig').innerHTML='<span class="mini-ph">Your speech…</span>';
-  document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translation…</span>';
-  history=[];
-lsClear();
-  window.speechSynthesis&&window.speechSynthesis.cancel();
-  iEls={A:null,B:null};
-  ss('Cleared — ready','');
-}
-
-// ── UTILS ──
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-// ── STORAGE: persist settings & history to localStorage ──
-var LS_KEYS = {
-  langA:    'cb_lang_a',
-  langB:    'cb_lang_b',
-  callMyL:  'cb_call_my',
-  callTheirL: 'cb_call_their',
-  history:  'cb_history'
-};
-
-function lsSave(key, val){
-  try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
-}
-function lsLoad(key, fallback){
-  try{
-    var raw = localStorage.getItem(key);
-    return raw !== null ? JSON.parse(raw) : fallback;
-  }catch(e){ return fallback; }
-}
-function lsClear(){
-  try{ Object.values(LS_KEYS).forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
-}
-
-function saveHistory(){
-  // Keep last 200 entries to avoid quota
-  lsSave(LS_KEYS.history, history.slice(0, 200));
-}
-
-function loadHistory(){
-  var saved = lsLoad(LS_KEYS.history, []);
-  if(Array.isArray(saved) && saved.length > 0){
-    history = saved;
-  }
-}
-
-function saveLangs(){
-  lsSave(LS_KEYS.langA, st.A.lang.code);
-  lsSave(LS_KEYS.langB, st.B.lang.code);
-}
-
-function saveCallLangs(){
-  var ml = document.getElementById('callMyLang');
-  var tl = document.getElementById('callTheirLang');
-  if(ml) lsSave(LS_KEYS.callMyL, ml.value);
-  if(tl) lsSave(LS_KEYS.callTheirL, tl.value);
-}
-
-function loadLangs(){
-  var codeA = lsLoad(LS_KEYS.langA, null);
-  var codeB = lsLoad(LS_KEYS.langB, null);
-  if(codeA){ var l = LANGS.find(function(x){ return x.code === codeA; }); if(l) st.A.lang = l; }
-  if(codeB){ var l = LANGS.find(function(x){ return x.code === codeB; }); if(l) st.B.lang = l; }
-  updateLabels();
-}
-
-function loadCallLangs(){
-  var myL   = lsLoad(LS_KEYS.callMyL, null);
-  var theirL = lsLoad(LS_KEYS.callTheirL, null);
-  var ml = document.getElementById('callMyLang');
-  var tl = document.getElementById('callTheirLang');
-  if(ml && myL){
-    var opt = ml.querySelector('option[value="'+myL+'"]');
-    if(opt) ml.value = myL;
-  }
-  if(tl && theirL){
-    var opt2 = tl.querySelector('option[value="'+theirL+'"]');
-    if(opt2) tl.value = theirL;
-  }
-  updateCallLabels();
-}
-
-// ── INIT ──
-(function(){
-// Restore persisted settings on startup
-loadLangs();
-loadHistory();
-if(history.length > 0){ ss('📜 ' + history.length + ' saved conversations restored','ok'); }
-// loadCallLangs() called after populateCallSelects() has built the <select> options
-  if(window.speechSynthesis){
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
-  }
-  if(!SR){
-activateFallback('A');
-activateFallback('B');
-activateFallback('call');
-ss('⚠️ Mic not supported in this browser — text mode enabled','wrn');
-}f(navigator.permissions){
-    navigator.permissions.query({name:'microphone'}).then(function(p){
-      if(p.state==='denied')ss('❌ Mic blocked — click 🔒 in address bar → Allow microphone','err');
-      else ss('Ready — tap 🎙️ to start','');
-      p.onchange=function(){
-        if(p.state==='denied')ss('❌ Mic blocked','err');
-        else ss('Mic access granted! Tap 🎙️ to start.','ok');
-      };
-    }).catch(function(){ss('Ready — tap 🎙️ to start','');});
-  }else{
-    ss('Ready — tap 🎙️ to start','');
-  }
-
-// Initialise room UI
-setRoomUI('idle');
-})();
-
-
-// ── STT FALLBACK (text mode for Firefox/Safari) ──
-function activateFallback(p){
-// Show text input panel, hide/dim mic button
-if(p==='A'||p==='B'){
-var tf=document.getElementById('tf'+p);
-var mic=document.getElementById('mic'+p);
-if(tf)tf.classList.add('active');
-if(mic){mic.disabled=true;mic.style.opacity='0.25';mic.title='Mic unavailable — use text input';}
-}else if(p==='call'){
-var tfC=document.getElementById('tfCall');
-var bm=document.getElementById('bigMic');
-if(tfC)tfC.classList.add('active');
-if(bm){bm.disabled=true;bm.style.opacity='0.25';bm.title='Mic unavailable — use text input';}
-}
-}
-
-async function sendText(p){
-var input=document.getElementById('tfInput'+p);
-if(!input)return;
-var text=input.value.trim();
-if(!text)return;
-input.value='';
-var other=p==='A'?'B':'A';
-addBubble(p,text,'orig');
-ss('⏳ Translating…','');
-var trans=await doTranslateSafe(text,st[p].lang.out,st[other].lang.out);
+try{s.rec.abort();}catch(ex){}
+var trans=await doTranslateSafe(final,s.lang.out,st[other].lang.out);
 addBubble(other,trans,'trans');
-addHist('Person '+p,text,trans,st[other].lang);
+addHist('Person '+p,final,trans,st[other].lang);
 setPanelTTS(other,true);
 ss('🔊 Speaking '+st[other].lang.flag+' '+st[other].lang.name+'…','ok');
 doSpeak(trans,st[other].lang.out,function(){
 setPanelTTS(other,false);
-ss('✅ Done — type next message or Person '+other+' responds','ok');
+ss('✅ Done — Person '+p+' speak again or Person '+other+' respond','ok');
+if(s.listening)setTimeout(function(){startRec(p);},200);
 });
 }
+};
 
-async function sendCallText(){
-var input=document.getElementById('tfInputCall');
-if(!input)return;
-var text=input.value.trim();
-if(!text)return;
-input.value='';
-document.getElementById('callOrig').textContent=text;
-document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.name.toUpperCase()+')';
-document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
-document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
-ss('⏳ Translating…','');
-var trans=await doTranslateSafe(text,callSt.myLang.out,callSt.theirLang.out);
-document.getElementById('callTrans').textContent=trans;
-addHist('Remote (you)',text,trans,callSt.theirLang);
-showSentInPeerPanel(text,trans);
-sendToPeer(text,trans,callSt.myLang.name,callSt.theirLang.name);
-ss('📤 Sent to peer — '+trans,'ok');
+s.rec.onerror=function(e){
+if(e.error==='no-speech'||e.error==='aborted')return;
+if(e.error==='not-allowed'){ss('❌ Mic permission revoked','err');stopMic(p);return;}
+ss('⚠️ '+e.error,'wrn');
+};
+
+s.rec.onend=function(){
+if(s.listening&&!window.speechSynthesis.speaking){
+setTimeout(function(){startRec(p);},150);
+}
+};
+
+try{s.rec.start();}catch(e){setTimeout(function(){startRec(p);},300);}
+}
+
+function stopMic(p){
+var s=st[p];
+s.listening=false;
+clearStreamEl(p);
+if(s.rec){try{s.rec.abort();}catch(e){}s.rec=null;}
+if(s.vraf){cancelAnimationFrame(s.vraf);s.vraf=null;}
+if(s.stream){s.stream.getTracks().forEach(function(t){t.stop();});s.stream=null;}
+if(s.actx){try{s.actx.close();}catch(e){}s.actx=null;}
+resetVol('vol'+p);
+setMicUI(p,false);
+setPanelTTS(p,false);
+}
+
+function setMicUI(p,on){
+var btn=document.getElementById('mic'+p);
+var outer=document.getElementById('outer'+p);
+var pel=document.getElementById('person'+p);
+var dot=document.getElementById('dot'+p);
+var sta=document.getElementById('sta'+p);
+if(on){
+btn.textContent='⏹️';
+btn.className='mic-btn on-'+p.toLowerCase();
+outer.classList.add('on');
+pel.classList.add('listening');
+dot.className='sdot go';
+sta.textContent='Listening…';
+}else{
+btn.textContent='🎙️';
+btn.className='mic-btn';
+outer.classList.remove('on');
+pel.classList.remove('listening','speaking-out');
+dot.className='sdot';
+sta.textContent='Idle';
 }
 }
 
-// Allow Enter key to send (Shift+Enter for newline)
-document.addEventListener('DOMContentLoaded',function(){
-['tfInputA','tfInputB','tfInputCall'].forEach(function(id){
-var el=document.getElementById(id);
-if(!el)return;
-el.addEventListener('keydown',function(e){
-if(e.key==='Enter'&&!e.shiftKey){
-e.preventDefault();
-if(id==='tfInputA')sendText('A');
-else if(id==='tfInputB')sendText('B');
-else sendCallText();
+function setPanelTTS(p,on){
+var pel=document.getElementById('person'+p);
+var dot=document.getElementById('dot'+p);
+var sta=document.getElementById('sta'+p);
+if(on){
+pel.classList.add('speaking-out');
+dot.className='sdot talk';
+sta.textContent='Playing…';
+}else{
+pel.classList.remove('speaking-out');
+if(!st[p].listening){dot.className='sdot';sta.textContent='Idle';}
 }
-});
-});
-});
-
-// ── PWA INSTALL ──
-var deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  deferredPrompt = e;
-  var banner = document.getElementById('installBanner');
-  if (banner) banner.style.display = 'flex';
-});
-window.addEventListener('appinstalled', function() {
-  deferredPrompt = null;
-  var banner = document.getElementById('installBanner');
-  if (banner) banner.style.display = 'none';
-});
-function installPWA() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(function(result) {
-    deferredPrompt = null;
-    var banner = document.getElementById('installBanner');
-    if (banner) banner.style.display = 'none';
-  });
 }
+// ── WEBRTC P2P (PeerJS) ──
+var peer=null;
+var peerConn=null;
+var isRoomHost=false;
 
-</script>
-</body>
-</html>// ── CALL MODE — WebRTC via PeerJS ──
-// Architecture:
-//   Person A: createRoom() → PeerJS gives a peer.id → show as Room Code
-//   Person B: joinRoom(code) → peer.connect(code) → data channel opens
-//   On speech/text: translate → send JSON {orig, trans, lang} over data channel
-//   Receiver: display bubble + play TTS locally (no acoustic relay!)
-
-var peer = null;          // PeerJS Peer instance
-var peerConn = null;      // active DataConnection
-var isRoomHost = false;   // true = created room (Person A)
-
-// ── Room Code helpers ──
 function genCode(){
 var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-var code='';
-for(var i=0;i<6;i++) code+=chars[Math.floor(Math.random()*chars.length)];
+var code='';for(var i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
 return code;
-}
-
-function showRoomCode(code){
-document.getElementById('roomCodeDisplay').textContent=code;
 }
 
 function copyRoomCode(){
@@ -1435,15 +884,14 @@ ss('📋 Room code copied: '+code,'ok');
 });
 }
 
-// ── Create Room (Person A) ──
 function createRoom(){
-if(peer&&!peer.destroyed){peer.destroy();}
+if(peer&&!peer.destroyed)peer.destroy();
 var code=genCode();
 ss('⌛ Connecting to signalling server…','');
 setRoomUI('connecting');
 peer=new Peer(code,{debug:0});
 peer.on('open',function(id){
-showRoomCode(id);
+document.getElementById('roomCodeDisplay').textContent=id;
 isRoomHost=true;
 ss('✅ Room ready — share code '+id+' with the other person','ok');
 setRoomUI('waiting');
@@ -1451,7 +899,7 @@ setRoomUI('waiting');
 peer.on('connection',function(conn){
 peerConn=conn;
 setupDataConn(conn);
-ss('🔗 '+conn.peer+' connected!','ok');
+ss('🔗 Peer connected!','ok');
 setRoomUI('connected');
 });
 peer.on('error',function(e){
@@ -1460,11 +908,10 @@ setRoomUI('idle');
 });
 }
 
-// ── Join Room (Person B) ──
 function joinRoom(){
 var code=document.getElementById('joinCodeInput').value.trim().toUpperCase();
 if(code.length<4){ss('⚠️ Enter the room code first','wrn');return;}
-if(peer&&!peer.destroyed){peer.destroy();}
+if(peer&&!peer.destroyed)peer.destroy();
 ss('⌛ Connecting…','');
 setRoomUI('connecting');
 peer=new Peer(undefined,{debug:0});
@@ -1484,17 +931,15 @@ setRoomUI('idle');
 });
 }
 
-// ── Leave Room ──
 function leaveRoom(){
 if(peerConn){try{peerConn.close();}catch(e){}peerConn=null;}
 if(peer){try{peer.destroy();}catch(e){}peer=null;}
-showRoomCode('——————');
+document.getElementById('roomCodeDisplay').textContent='——————';
 document.getElementById('joinCodeInput').value='';
 setRoomUI('idle');
 ss('Disconnected.','');
 }
 
-// ── Room UI state machine ──
 function setRoomUI(state){
 var dot=document.getElementById('roomDot');
 var label=document.getElementById('roomLabel');
@@ -1528,70 +973,45 @@ peerSec.style.display='';
 }
 }
 
-// ── Data Channel: setup send/receive ──
 function setupDataConn(conn){
 conn.on('data',function(data){
-// Received a message from the other device
-if(data&&data.type==='message'){
-receivePeerMessage(data);
-}else if(data&&data.type==='ping'){
-conn.send({type:'pong'});
-}
+if(data&&data.type==='message')receivePeerMessage(data);
+else if(data&&data.type==='ping')conn.send({type:'pong'});
 });
 conn.on('close',function(){
 ss('🔴 Peer disconnected','err');
-setRoomUI('idle');
-peerConn=null;
+setRoomUI('idle');peerConn=null;
 });
 conn.on('error',function(e){ss('⚠️ Data channel: '+e,'wrn');});
 }
 
-// ── Send translated message to peer ──
 function sendToPeer(orig,trans,myLangName,theirLangName){
 if(!peerConn||!peerConn.open)return;
 try{
-peerConn.send({
-type:'message',
-orig:orig,
-trans:trans,
-myLang:myLangName,
-theirLang:theirLangName,
-ts:Date.now()
-});
+peerConn.send({type:'message',orig:orig,trans:trans,
+myLang:myLangName,theirLang:theirLangName,ts:Date.now()});
 }catch(e){ss('⚠️ Send failed: '+e.message,'wrn');}
 }
 
-// ── Receive message from peer → show + play TTS ──
 function receivePeerMessage(data){
-// Show in peer message panel
 var list=document.getElementById('peerMsgList');
 var empty=list.querySelector('.empty-h');
 if(empty)empty.remove();
 var msg=document.createElement('div');
 msg.className='pmsg recv';
-msg.innerHTML='<div class="pmsg-who">📱 Them → '+escH(data.theirLang||'')+'</div>'+
-'<div style="font-size:10px;color:var(--muted);">'+escH(data.orig||'')+'</div>'+
-'<div>'+escH(data.trans||'')+'</div>';
-list.appendChild(msg);
-list.scrollTop=list.scrollHeight;
-
-// Update the dual panels
-document.getElementById('callTransHead').textContent='← THEM SAID';
+msg.innerHTML='<div class="pmsg-who">📱 Them → '+esc(data.theirLang||'')+'</div>'+
+'<div style="font-size:10px;color:var(--muted)">'+esc(data.orig||'')+'</div>'+
+'<div>'+esc(data.trans||'')+'</div>';
+list.appendChild(msg);list.scrollTop=list.scrollHeight;
+document.getElementById('callTransHead').textContent='← THEY SAID';
 document.getElementById('callTrans').textContent=data.orig||'';
 document.getElementById('callOrigHead').textContent='TRANSLATION FOR YOU';
 document.getElementById('callOrig').textContent=data.trans||'';
-
-// Play TTS of the translation (in our language)
 var theirLangOut=callSt.theirLang.out;
-ss('🔊 Playing: '+escH(data.trans||''),'ok');
-doSpeak(data.trans||'',theirLangOut,function(){
-ss('✅ Done — your turn to speak','ok');
-});
+ss('🔊 Playing: '+esc(data.trans||''),'ok');
+doSpeak(data.trans||'',theirLangOut,function(){ss('✅ Done — your turn to speak','ok');});
 }
 
-function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-// ── Add outgoing message to peer panel ──
 function showSentInPeerPanel(orig,trans){
 var list=document.getElementById('peerMsgList');
 if(!list)return;
@@ -1600,13 +1020,11 @@ if(empty)empty.remove();
 var msg=document.createElement('div');
 msg.className='pmsg sent';
 msg.innerHTML='<div class="pmsg-who">📱 You said</div>'+
-'<div>'+escH(orig)+'</div>'+
-'<div style="font-size:10px;color:var(--muted);">→ '+escH(trans)+'</div>';
-list.appendChild(msg);
-list.scrollTop=list.scrollHeight;
+'<div>'+esc(orig)+'</div>'+
+'<div style="font-size:10px;color:var(--muted)">→ '+esc(trans)+'</div>';
+list.appendChild(msg);list.scrollTop=list.scrollHeight;
 }
-
-// ── Mic toggle (call mode) ──
+// ── CALL MODE MIC ──
 function toggleCallMic(){
 if(callSt.listening)stopCallMic();else startCallMic();
 }
@@ -1659,8 +1077,13 @@ for(var i=e.resultIndex;i<e.results.length;i++){
 if(e.results[i].isFinal)final+=e.results[i][0].transcript;
 else interim+=e.results[i][0].transcript;
 }
-if(interim)document.getElementById('callOrig').textContent=interim;
+if(interim){
+document.getElementById('callOrig').textContent=interim;
+// Streaming translation for call mode
+streamTranslate('call',interim,callSt.myLang.out,callSt.theirLang.out,'callTrans');
+}
 if(final){
+clearStreamEl('call');
 document.getElementById('callOrig').textContent=final;
 document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.name.toUpperCase()+')';
 document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
@@ -1671,11 +1094,8 @@ var trans=await doTranslateSafe(final,callSt.myLang.out,callSt.theirLang.out);
 document.getElementById('callTrans').textContent=trans;
 addHist('Remote (you)',final,trans,callSt.theirLang);
 showSentInPeerPanel(final,trans);
-// Send to peer FIRST (they hear it on their device)
 sendToPeer(final,trans,callSt.myLang.name,callSt.theirLang.name);
-// Local feedback: just confirm sent
 ss('📤 Sent to peer — '+trans,'ok');
-// Resume mic after short delay
 callSt.ttsPlaying=false;
 document.getElementById('callMicLabel').textContent='LISTENING — TAP TO STOP';
 if(callSt.listening)setTimeout(startCallRec,300);
@@ -1699,13 +1119,14 @@ try{callSt.rec.start();}catch(e){setTimeout(startCallRec,300);}
 
 function stopCallMic(){
 callSt.listening=false;
+clearStreamEl('call');
 if(callSt.rec){try{callSt.rec.abort();}catch(e){}callSt.rec=null;}
 if(callSt.vraf){cancelAnimationFrame(callSt.vraf);callSt.vraf=null;}
 if(callSt.stream){callSt.stream.getTracks().forEach(function(t){t.stop();});callSt.stream=null;}
 if(callSt.actx){try{callSt.actx.close();}catch(e){}callSt.actx=null;}
 resetVol('volCall');
 var bm=document.getElementById('bigMic');
-bm.textContent='🎤️';bm.className='big-mic-btn';
+bm.textContent='🎙️';bm.className='big-mic-btn';
 document.getElementById('bigOuter').classList.remove('on');
 document.getElementById('callMicLabel').textContent='TAP TO SPEAK';
 ss('Stopped.','');
@@ -1714,138 +1135,143 @@ ss('Stopped.','');
 // ── BUBBLES ──
 var iEls={A:null,B:null};
 function showInterim(p,t){
-  var box=document.getElementById('box'+p);
-  if(!iEls[p]){var el=document.createElement('div');el.className='bubble interim';box.appendChild(el);iEls[p]=el;}
-  iEls[p].textContent=t;box.scrollTop=box.scrollHeight;
+var box=document.getElementById('box'+p);
+if(!iEls[p]){var el=document.createElement('div');el.className='bubble interim';box.appendChild(el);iEls[p]=el;}
+iEls[p].textContent=t;box.scrollTop=box.scrollHeight;
 }
 function clearInterim(p){if(iEls[p]){iEls[p].remove();iEls[p]=null;}}
 function addBubble(p,text,type){
-  var box=document.getElementById('box'+p);
-  var ph=box.querySelector('.ph');if(ph)ph.remove();
-  var el=document.createElement('div');
-  el.className='bubble '+type;el.textContent=text;
-  box.appendChild(el);box.scrollTop=box.scrollHeight;
+var box=document.getElementById('box'+p);
+var ph=box.querySelector('.ph');if(ph)ph.remove();
+var el=document.createElement('div');
+el.className='bubble '+type;el.textContent=text;
+box.appendChild(el);box.scrollTop=box.scrollHeight;
 }
 
 // ── LANG PICKER ──
 function openPicker(p){
-  activePicker=p;
-  document.getElementById('sheetHd').textContent='PERSON '+p+' LANGUAGE';
-  document.getElementById('lsearch').value='';
-  renderGrid('');
-  document.getElementById('langSheet').classList.remove('hidden');
-  setTimeout(function(){document.getElementById('lsearch').focus();},100);
+activePicker=p;
+document.getElementById('sheetHd').textContent='PERSON '+p+' LANGUAGE';
+document.getElementById('lsearch').value='';
+renderGrid('');
+document.getElementById('langSheet').classList.remove('hidden');
+setTimeout(function(){document.getElementById('lsearch').focus();},100);
 }
 function closePicker(e){
-  if(!e||e.target===document.getElementById('langSheet'))
-    document.getElementById('langSheet').classList.add('hidden');
+if(!e||e.target===document.getElementById('langSheet'))
+document.getElementById('langSheet').classList.add('hidden');
 }
 function filterLangs(){renderGrid(document.getElementById('lsearch').value);}
 function renderGrid(q){
-  var g=document.getElementById('lgrid');
-  var sel=activePicker?st[activePicker].lang.code:'';
-  var seen={};
-  var filtered=LANGS.filter(function(l){
-    if(seen[l.code])return false;seen[l.code]=1;
-    return !q||l.name.toLowerCase().indexOf(q.toLowerCase())>=0;
-  });
-  g.innerHTML=filtered.map(function(l){
-    return '<div class="lopt'+(l.code===sel?' sel':'')+'" onclick="pickLang(\''+l.code+'\')">'+l.flag+' '+l.name+'</div>';
-  }).join('');
+var g=document.getElementById('lgrid');
+var sel=activePicker?st[activePicker].lang.code:'';
+var seen={};
+var filtered=LANGS.filter(function(l){
+if(seen[l.code])return false;seen[l.code]=1;
+return !q||l.name.toLowerCase().indexOf(q.toLowerCase())>=0;
+});
+g.innerHTML=filtered.map(function(l){
+return '<div class="lopt'+(l.code===sel?' sel':'')+'" onclick="pickLang(''+l.code+'')">'+l.flag+' '+l.name+'</div>';
+}).join('');
 }
 function pickLang(code){
-  var l=LANGS.find(function(x){return x.code===code;});
-  if(!l||!activePicker)return;
-  st[activePicker].lang=l;
-  updateLabels();
-  document.getElementById('langSheet').classList.add('hidden');
-  ss('Language updated!','ok');
+var l=LANGS.find(function(x){return x.code===code;});
+if(!l||!activePicker)return;
+st[activePicker].lang=l;
+updateLabels();saveLangs();
+document.getElementById('langSheet').classList.add('hidden');
+ss('Language updated!','ok');
 }
 
 // ── HISTORY ──
 function addHist(who,orig,trans,targetLang){
-  var t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  history.unshift({who:who,orig:orig,trans:trans,tl:targetLang,time:t});
+var t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+history.unshift({who:who,orig:orig,trans:trans,tl:targetLang,time:t});
+saveHistory();
 }
 function showHistory(){
-  var list=document.getElementById('hlist');
-  if(!history.length){
-    list.innerHTML='<div class="empty-h">No conversation yet</div>';
-  }else{
-    list.innerHTML=history.map(function(h){
-      return '<div class="hi">'+
-        '<div class="hi-who">'+h.who+' → '+(h.tl?h.tl.flag+' '+h.tl.name:'')+'</div>'+
-        '<div class="hi-o">'+esc(h.orig)+'</div>'+
-        '<div class="hi-t">'+esc(h.trans)+'</div>'+
-        '<div class="hi-m">'+h.time+'</div>'+
-        '</div>';
-    }).join('');
-  }
-  document.getElementById('histSheet').classList.remove('hidden');
+var list=document.getElementById('hlist');
+if(!history.length){
+list.innerHTML='<div class="empty-h">No conversation yet</div>';
+}else{
+list.innerHTML=history.map(function(h){
+return '<div class="hi">'+
+'<div class="hi-who">'+h.who+' → '+(h.tl?h.tl.flag+' '+h.tl.name:'')+'</div>'+
+'<div class="hi-o">'+esc(h.orig)+'</div>'+
+'<div class="hi-t">'+esc(h.trans)+'</div>'+
+'<div class="hi-m">'+h.time+'</div>'+
+'</div>';
+}).join('');
+}
+document.getElementById('histSheet').classList.remove('hidden');
 }
 function closeHist(e){
-  if(!e||e.target===document.getElementById('histSheet'))
-    document.getElementById('histSheet').classList.add('hidden');
+if(!e||e.target===document.getElementById('histSheet'))
+document.getElementById('histSheet').classList.add('hidden');
 }
 function exportHistory(){
-  if(!history.length){alert('No history to export.');return;}
-  var txt=history.map(function(h){
-    return '['+h.time+'] '+h.who+'\nOriginal:    '+h.orig+'\nTranslated:  '+h.trans+'\n';
-  }).join('\n');
-  var blob=new Blob([txt],{type:'text/plain'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='chatterbox-history-'+new Date().toISOString().slice(0,10)+'.txt';
-  a.click();
+if(!history.length){alert('No history to export.');return;}
+var txt=history.map(function(h){
+return '['+h.time+'] '+h.who+'\nOriginal: '+h.orig+'\nTranslated: '+h.trans+'\n';
+}).join('\n');
+var blob=new Blob([txt],{type:'text/plain'});
+var a=document.createElement('a');
+a.href=URL.createObjectURL(blob);
+a.download='chatterbox-history-'+new Date().toISOString().slice(0,10)+'.txt';
+a.click();
 }
-
 // ── CLEAR ALL ──
 function clearAll(){
-  ['A','B'].forEach(function(p){
-    if(st[p].listening)stopMic(p);
-    document.getElementById('box'+p).innerHTML='<div class="ph">Tap mic to speak…</div>';
-  });
-  if(callSt.listening)stopCallMic();
-  document.getElementById('callOrig').innerHTML='<span class="mini-ph">Your speech…</span>';
-  document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translation…</span>';
-  history=[];
-  window.speechSynthesis&&window.speechSynthesis.cancel();
-  iEls={A:null,B:null};
-  ss('Cleared — ready','');
+['A','B'].forEach(function(p){
+if(st[p].listening)stopMic(p);
+clearStreamEl(p);
+document.getElementById('box'+p).innerHTML='<div class="ph">Tap mic to speak…</div>';
+});
+if(callSt.listening)stopCallMic();
+if(peerConn||peer)leaveRoom();
+document.getElementById('callOrig').innerHTML='<span class="mini-ph">Your speech…</span>';
+document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translation…</span>';
+history=[];
+lsClear();
+window.speechSynthesis&&window.speechSynthesis.cancel();
+iEls={A:null,B:null};
+ss('Cleared — ready','');
 }
 
 // ── UTILS ──
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-// ── INIT ──
-(function(){
-  if(window.speechSynthesis){
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
-  }
-  if(!SR){
-activateFallback('A');
-activateFallback('B');
-activateFallback('call');
-ss('⚠️ Mic not supported in this browser — text mode enabled','wrn');
-}f(navigator.permissions){
-    navigator.permissions.query({name:'microphone'}).then(function(p){
-      if(p.state==='denied')ss('❌ Mic blocked — click 🔒 in address bar → Allow microphone','err');
-      else ss('Ready — tap 🎙️ to start','');
-      p.onchange=function(){
-        if(p.state==='denied')ss('❌ Mic blocked','err');
-        else ss('Mic access granted! Tap 🎙️ to start.','ok');
-      };
-    }).catch(function(){ss('Ready — tap 🎙️ to start','');});
-  }else{
-    ss('Ready — tap 🎙️ to start','');
-  }
-})();
+// ── LOCALSTORAGE ──
+var LS_KEYS={langA:'cb_lang_a',langB:'cb_lang_b',callMyL:'cb_call_my',callTheirL:'cb_call_their',history:'cb_history'};
+function lsSave(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
+function lsLoad(key,fallback){try{var raw=localStorage.getItem(key);return raw!==null?JSON.parse(raw):fallback;}catch(e){return fallback;}}
+function lsClear(){try{Object.values(LS_KEYS).forEach(function(k){localStorage.removeItem(k);});}catch(e){}}
 
+function saveHistory(){lsSave(LS_KEYS.history,history.slice(0,200));}
+function loadHistory(){var s=lsLoad(LS_KEYS.history,[]);if(Array.isArray(s)&&s.length>0)history=s;}
+function saveLangs(){lsSave(LS_KEYS.langA,st.A.lang.code);lsSave(LS_KEYS.langB,st.B.lang.code);}
+function saveCallLangs(){
+var ml=document.getElementById('callMyLang');
+var tl=document.getElementById('callTheirLang');
+if(ml)lsSave(LS_KEYS.callMyL,ml.value);
+if(tl)lsSave(LS_KEYS.callTheirL,tl.value);
+}
+function loadLangs(){
+var cA=lsLoad(LS_KEYS.langA,null);var cB=lsLoad(LS_KEYS.langB,null);
+if(cA){var l=LANGS.find(function(x){return x.code===cA;});if(l)st.A.lang=l;}
+if(cB){var l2=LANGS.find(function(x){return x.code===cB;});if(l2)st.B.lang=l2;}
+updateLabels();
+}
+function loadCallLangs(){
+var myL=lsLoad(LS_KEYS.callMyL,null);var theirL=lsLoad(LS_KEYS.callTheirL,null);
+var ml=document.getElementById('callMyLang');var tl=document.getElementById('callTheirLang');
+if(ml&&myL){var opt=ml.querySelector('option[value="'+myL+'"]');if(opt)ml.value=myL;}
+if(tl&&theirL){var opt2=tl.querySelector('option[value="'+theirL+'"]');if(opt2)tl.value=theirL;}
+updateCallLabels();
+}
 
 // ── STT FALLBACK (text mode for Firefox/Safari) ──
 function activateFallback(p){
-// Show text input panel, hide/dim mic button
 if(p==='A'||p==='B'){
 var tf=document.getElementById('tf'+p);
 var mic=document.getElementById('mic'+p);
@@ -1886,20 +1312,19 @@ var text=input.value.trim();
 if(!text)return;
 input.value='';
 document.getElementById('callOrig').textContent=text;
+document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.name.toUpperCase()+')';
 document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
+document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
 ss('⏳ Translating…','');
 var trans=await doTranslateSafe(text,callSt.myLang.out,callSt.theirLang.out);
 document.getElementById('callTrans').textContent=trans;
-addHist('Person '+callRole,text,trans,callSt.theirLang);
-document.getElementById('callMicLabel').textContent='🔊 SPEAKING TRANSLATION…';
-ss('🔊 Playing translation aloud…','ok');
-doSpeak(trans,callSt.theirLang.out,function(){
-document.getElementById('callMicLabel').textContent='TEXT MODE — TYPE TO TRANSLATE';
-ss('✅ Done — type next message','ok');
-});
+addHist('Remote (you)',text,trans,callSt.theirLang);
+showSentInPeerPanel(text,trans);
+sendToPeer(text,trans,callSt.myLang.name,callSt.theirLang.name);
+ss('📤 Sent — '+trans,'ok');
 }
 
-// Allow Enter key to send (Shift+Enter for newline)
+// Enter key to send
 document.addEventListener('DOMContentLoaded',function(){
 ['tfInputA','tfInputB','tfInputCall'].forEach(function(id){
 var el=document.getElementById(id);
@@ -1916,28 +1341,53 @@ else sendCallText();
 });
 
 // ── PWA INSTALL ──
-var deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  deferredPrompt = e;
-  var banner = document.getElementById('installBanner');
-  if (banner) banner.style.display = 'flex';
+var deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){
+e.preventDefault();deferredPrompt=e;
+var banner=document.getElementById('installBanner');
+if(banner)banner.style.display='flex';
 });
-window.addEventListener('appinstalled', function() {
-  deferredPrompt = null;
-  var banner = document.getElementById('installBanner');
-  if (banner) banner.style.display = 'none';
+window.addEventListener('appinstalled',function(){
+deferredPrompt=null;
+var banner=document.getElementById('installBanner');
+if(banner)banner.style.display='none';
 });
-function installPWA() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(function(result) {
-    deferredPrompt = null;
-    var banner = document.getElementById('installBanner');
-    if (banner) banner.style.display = 'none';
-  });
+function installPWA(){
+if(!deferredPrompt)return;
+deferredPrompt.prompt();
+deferredPrompt.userChoice.then(function(){
+deferredPrompt=null;
+var banner=document.getElementById('installBanner');
+if(banner)banner.style.display='none';
+});
 }
 
+// ── INIT ──
+(function(){
+loadLangs();
+loadHistory();
+if(history.length>0)ss('📜 '+history.length+' saved conversations restored','ok');
+if(window.speechSynthesis){
+window.speechSynthesis.getVoices();
+window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
+}
+if(!SR){
+activateFallback('A');activateFallback('B');activateFallback('call');
+ss('⚠️ Mic not supported in this browser — text mode enabled','wrn');
+}else if(navigator.permissions){
+navigator.permissions.query({name:'microphone'}).then(function(p){
+if(p.state==='denied')ss('❌ Mic blocked — click 🔒 in address bar → Allow microphone','err');
+else ss('Ready — tap 🎙️ to start','');
+p.onchange=function(){
+if(p.state==='denied')ss('❌ Mic blocked','err');
+else ss('Mic access granted! Tap 🎙️ to start.','ok');
+};
+}).catch(function(){ss('Ready — tap 🎙️ to start','');});
+}else{
+ss('Ready — tap 🎙️ to start','');
+}
+setRoomUI('idle');
+})();
 </script>
 </body>
 </html>
