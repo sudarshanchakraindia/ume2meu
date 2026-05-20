@@ -412,6 +412,7 @@ function updateCallLabels(){
   callSt.theirLang=LANGS.find(function(l){return l.out===tl.value;})||LANGS[0];
   document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.name.toUpperCase()+')';
   document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
+saveCallLangs();
 }
 
 function populateCallSelects(){
@@ -434,6 +435,7 @@ function populateCallSelects(){
   updateCallLabels();
 }
 populateCallSelects();
+loadCallLangs();
 
 // ── ROLE (call mode) ──
 function setRole(r){
@@ -1125,6 +1127,7 @@ function pickLang(code){
   if(!l||!activePicker)return;
   st[activePicker].lang=l;
   updateLabels();
+saveLangs();
   document.getElementById('langSheet').classList.add('hidden');
   ss('Language updated!','ok');
 }
@@ -1133,6 +1136,7 @@ function pickLang(code){
 function addHist(who,orig,trans,targetLang){
   var t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   history.unshift({who:who,orig:orig,trans:trans,tl:targetLang,time:t});
+saveHistory();
 }
 function showHistory(){
   var list=document.getElementById('hlist');
@@ -1177,6 +1181,7 @@ if(rtcConn||rtcPeer)leaveRoom();
   document.getElementById('callOrig').innerHTML='<span class="mini-ph">Your speech…</span>';
   document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translation…</span>';
   history=[];
+lsClear();
   window.speechSynthesis&&window.speechSynthesis.cancel();
   iEls={A:null,B:null};
   ss('Cleared — ready','');
@@ -1185,8 +1190,83 @@ if(rtcConn||rtcPeer)leaveRoom();
 // ── UTILS ──
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+// ── STORAGE: persist settings & history to localStorage ──
+var LS_KEYS = {
+  langA:    'cb_lang_a',
+  langB:    'cb_lang_b',
+  callMyL:  'cb_call_my',
+  callTheirL: 'cb_call_their',
+  history:  'cb_history'
+};
+
+function lsSave(key, val){
+  try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
+}
+function lsLoad(key, fallback){
+  try{
+    var raw = localStorage.getItem(key);
+    return raw !== null ? JSON.parse(raw) : fallback;
+  }catch(e){ return fallback; }
+}
+function lsClear(){
+  try{ Object.values(LS_KEYS).forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+}
+
+function saveHistory(){
+  // Keep last 200 entries to avoid quota
+  lsSave(LS_KEYS.history, history.slice(0, 200));
+}
+
+function loadHistory(){
+  var saved = lsLoad(LS_KEYS.history, []);
+  if(Array.isArray(saved) && saved.length > 0){
+    history = saved;
+  }
+}
+
+function saveLangs(){
+  lsSave(LS_KEYS.langA, st.A.lang.code);
+  lsSave(LS_KEYS.langB, st.B.lang.code);
+}
+
+function saveCallLangs(){
+  var ml = document.getElementById('callMyLang');
+  var tl = document.getElementById('callTheirLang');
+  if(ml) lsSave(LS_KEYS.callMyL, ml.value);
+  if(tl) lsSave(LS_KEYS.callTheirL, tl.value);
+}
+
+function loadLangs(){
+  var codeA = lsLoad(LS_KEYS.langA, null);
+  var codeB = lsLoad(LS_KEYS.langB, null);
+  if(codeA){ var l = LANGS.find(function(x){ return x.code === codeA; }); if(l) st.A.lang = l; }
+  if(codeB){ var l = LANGS.find(function(x){ return x.code === codeB; }); if(l) st.B.lang = l; }
+  updateLabels();
+}
+
+function loadCallLangs(){
+  var myL   = lsLoad(LS_KEYS.callMyL, null);
+  var theirL = lsLoad(LS_KEYS.callTheirL, null);
+  var ml = document.getElementById('callMyLang');
+  var tl = document.getElementById('callTheirLang');
+  if(ml && myL){
+    var opt = ml.querySelector('option[value="'+myL+'"]');
+    if(opt) ml.value = myL;
+  }
+  if(tl && theirL){
+    var opt2 = tl.querySelector('option[value="'+theirL+'"]');
+    if(opt2) tl.value = theirL;
+  }
+  updateCallLabels();
+}
+
 // ── INIT ──
 (function(){
+// Restore persisted settings on startup
+loadLangs();
+loadHistory();
+if(history.length > 0){ ss('📜 ' + history.length + ' saved conversations restored','ok'); }
+// loadCallLangs() called after populateCallSelects() has built the <select> options
   if(window.speechSynthesis){
     window.speechSynthesis.getVoices();
     window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
