@@ -197,25 +197,25 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
   <button class="install-btn" onclick="installPWA()">Install</button>
 </div>
 
-<header>
+<header role="banner">
   <div class="logo">
     <div class="logo-name">CHATTERBOX</div>
     <div class="logo-sub">REAL-TIME VOICE INTERPRETER</div>
   </div>
   <div class="hdr-btns">
-    <button class="hbtn" onclick="showHistory()" title="History">📜</button>
-    <button class="hbtn" onclick="clearAll()" title="Clear">🗑</button>
+    <button class="hbtn" onclick="showHistory()" title="History" aria-label="Show conversation history">📜</button>
+    <button class="hbtn" onclick="clearAll()" title="Clear" aria-label="Clear all conversations">🗑</button>
   </div>
 </header>
 
 <div id="sb">Tap a mic button to start speaking</div>
 
-<div class="mode-tabs">
-  <div class="mtab on" id="tab-face" onclick="switchMode('face')">🤝 Face to Face</div>
-  <div class="mtab" id="tab-call" onclick="switchMode('call')">📞 Remote Call</div>
+<div class="mode-tabs" role="tablist" aria-label="View mode">
+  <div class="mtab on" id="tab-face" onclick="switchMode('face')" role="tab" aria-selected="true" tabindex="0">🤝 Face to Face</div>
+  <div class="mtab" id="tab-call" onclick="switchMode('call')" role="tab" aria-selected="false" tabindex="0">📞 Remote Call</div>
 </div>
 
-<div class="main">
+<div class="main" role="main">
 
 <!-- FACE TO FACE -->
 <div id="faceMode" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
@@ -236,9 +236,9 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
         <div class="vol-bars" id="volA"></div>
         <div class="mic-outer" id="outerA">
           <div class="ring"></div><div class="ring"></div>
-          <button class="mic-btn" id="micA" onclick="toggleMic('A')">🎙️</button>
+          <button class="mic-btn" id="micA" onclick="toggleMic('A')" aria-label="Microphone for Person A">🎙️</button>
         </div>
-        <button class="lang-btn" onclick="openPicker('A')" title="Change language">🌐</button>
+        <button class="lang-btn" onclick="openPicker('A')" title="Change language" aria-label="Change language for Person A">🌐</button>
       </div>
     </div>
 <div class="text-fallback" id="tfA">
@@ -249,7 +249,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <div class="tf-hint">⌨️ Text mode — mic not available in this browser</div>
 </div>
 
-    <div class="divider"><div class="swap-pill" onclick="swapLangs()">⇄ swap</div></div>
+    <div class="divider"><div class="swap-pill" onclick="swapLangs()" role="button" aria-label="Swap languages between Person A and B" tabindex="0">⇄ swap</div></div>
 
     <div class="person flipped" id="personB">
       <div class="tts-indicator">🔊 SPEAKING</div>
@@ -266,9 +266,9 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
         <div class="vol-bars" id="volB"></div>
         <div class="mic-outer" id="outerB">
           <div class="ring"></div><div class="ring"></div>
-          <button class="mic-btn" id="micB" onclick="toggleMic('B')">🎙️</button>
+          <button class="mic-btn" id="micB" onclick="toggleMic('B')" aria-label="Microphone for Person B">🎙️</button>
         </div>
-        <button class="lang-btn" onclick="openPicker('B')" title="Change language">🌐</button>
+        <button class="lang-btn" onclick="openPicker('B')" title="Change language" aria-label="Change language for Person B">🌐</button>
       </div>
     </div>
 <div class="text-fallback" id="tfB">
@@ -335,7 +335,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0;">
 <div class="big-mic-outer" id="bigOuter">
 <div class="big-ring"></div><div class="big-ring"></div>
-<button class="big-mic-btn" id="bigMic" onclick="toggleCallMic()" disabled>🎙️</button>
+<button class="big-mic-btn" id="bigMic" onclick="toggleCallMic()" aria-label="Microphone for remote call" disabled>🎙️</button>
 </div>
 <div style="font-size:11px;font-weight:600;letter-spacing:2px;color:var(--muted);text-transform:uppercase;" id="callMicLabel">CONNECT FIRST</div>
 <div class="vol-bars-big" id="volCall"></div>
@@ -373,7 +373,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 
 <!-- LANG PICKER -->
 <div class="sheet-overlay hidden" id="langSheet" onclick="closePicker(event)">
-  <div class="sheet" onclick="event.stopPropagation()">
+  <div class="sheet" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Select language">
     <div class="sheet-hd" id="sheetHd">SELECT LANGUAGE</div>
     <input class="sheet-search" id="lsearch" placeholder="Search…" oninput="filterLangs()"/>
     <div class="lang-grid" id="lgrid"></div>
@@ -382,12 +382,12 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 
 <!-- HISTORY -->
 <div class="sheet-overlay hidden" id="histSheet" onclick="closeHist(event)">
-  <div class="hist-sheet" onclick="event.stopPropagation()">
+  <div class="hist-sheet" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Conversation history">
     <div class="hist-hd">
       <div class="hist-title">📜 HISTORY</div>
       <div style="display:flex;gap:6px;">
-        <button class="xbtn" onclick="exportHistory()" title="Export">⬇</button>
-        <button class="xbtn" onclick="closeHist()">✕</button>
+        <button class="xbtn" onclick="exportHistory()" title="Export" aria-label="Export conversation history">⬇</button>
+        <button class="xbtn" onclick="closeHist()" aria-label="Close history">✕</button>
       </div>
     </div>
     <div class="hlist" id="hlist"><div class="empty-h">No conversation yet</div></div>
@@ -457,6 +457,19 @@ function switchMode(m){
 function swapLangs(){
   var t=st.A.lang;st.A.lang=st.B.lang;st.B.lang=t;
   updateLabels();ss('Languages swapped!','ok');
+}
+
+// ── TRANSLATE WATCHDOG ──
+// Wraps doTranslate with a hard 12-second deadline.
+// If translation hangs (network drop mid-request), resolves with a notice
+// instead of leaving the mic frozen indefinitely.
+async function doTranslateSafe(text, from, to){
+  var timeout = new Promise(function(resolve){
+    setTimeout(function(){
+      resolve('[Translation timed out — check your connection]');
+    }, 12000);
+  });
+  return Promise.race([doTranslate(text, from, to), timeout]);
 }
 
 // ── TRANSLATE ──
@@ -640,7 +653,7 @@ function startRec(p){
       ss('⏳ Translating…','');
       // Abort recognition while TTS plays to prevent feedback loop
       try{s.rec.abort();}catch(ex){}
-      var trans=await doTranslate(final,s.lang.out,st[other].lang.out);
+      var trans=await doTranslateSafe(final,s.lang.out,st[other].lang.out);
       addBubble(other,trans,'trans');
       addHist('Person '+p,final,trans,st[other].lang);
       // Show speaking-out indicator on OTHER person's panel
@@ -1024,7 +1037,7 @@ document.getElementById('callOrig').textContent=final;
 document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
 ss('⏳ Translating…','');
 try{ callSt.rec.abort(); }catch(ex){}
-var trans = await doTranslate(final, callSt.myLang.out, callSt.theirLang.out);
+var trans = await doTranslateSafe(final, callSt.myLang.out, callSt.theirLang.out);
 document.getElementById('callTrans').textContent=trans;
 addHist('Me (call)',final,trans,callSt.theirLang);
 
@@ -1319,7 +1332,7 @@ input.value='';
 var other=p==='A'?'B':'A';
 addBubble(p,text,'orig');
 ss('⏳ Translating…','');
-var trans=await doTranslate(text,st[p].lang.out,st[other].lang.out);
+var trans=await doTranslateSafe(text,st[p].lang.out,st[other].lang.out);
 addBubble(other,trans,'trans');
 addHist('Person '+p,text,trans,st[other].lang);
 setPanelTTS(other,true);
@@ -1341,7 +1354,7 @@ document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.n
 document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
 document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
 ss('⏳ Translating…','');
-var trans=await doTranslate(text,callSt.myLang.out,callSt.theirLang.out);
+var trans=await doTranslateSafe(text,callSt.myLang.out,callSt.theirLang.out);
 document.getElementById('callTrans').textContent=trans;
 addHist('Remote (you)',text,trans,callSt.theirLang);
 showSentInPeerPanel(text,trans);
@@ -1654,7 +1667,7 @@ document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translatin
 document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
 ss('⏳ Translating…','');
 try{callSt.rec.abort();}catch(ex){}
-var trans=await doTranslate(final,callSt.myLang.out,callSt.theirLang.out);
+var trans=await doTranslateSafe(final,callSt.myLang.out,callSt.theirLang.out);
 document.getElementById('callTrans').textContent=trans;
 addHist('Remote (you)',final,trans,callSt.theirLang);
 showSentInPeerPanel(final,trans);
@@ -1855,7 +1868,7 @@ input.value='';
 var other=p==='A'?'B':'A';
 addBubble(p,text,'orig');
 ss('⏳ Translating…','');
-var trans=await doTranslate(text,st[p].lang.out,st[other].lang.out);
+var trans=await doTranslateSafe(text,st[p].lang.out,st[other].lang.out);
 addBubble(other,trans,'trans');
 addHist('Person '+p,text,trans,st[other].lang);
 setPanelTTS(other,true);
@@ -1875,7 +1888,7 @@ input.value='';
 document.getElementById('callOrig').textContent=text;
 document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
 ss('⏳ Translating…','');
-var trans=await doTranslate(text,callSt.myLang.out,callSt.theirLang.out);
+var trans=await doTranslateSafe(text,callSt.myLang.out,callSt.theirLang.out);
 document.getElementById('callTrans').textContent=trans;
 addHist('Person '+callRole,text,trans,callSt.theirLang);
 document.getElementById('callMicLabel').textContent='🔊 SPEAKING TRANSLATION…';
