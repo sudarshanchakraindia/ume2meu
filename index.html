@@ -7,7 +7,7 @@
 <meta name="description" content="Chatterbox – Real-time two-way voice interpreter. No human middleman."/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="Chatterbox"/>
+<meta name="apple-mobile-web-app-title" content="Chatterbox"/>h
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icons/icon-192.png"/>
 <link rel="icon" href="icons/icon-192.png"/>
@@ -802,12 +802,14 @@ if(s.listening)setTimeout(function(){startRec(p);},200);
 }
 };
 
-s.rec.onerror=function(e){
-if(e.error==='no-speech'||e.error==='aborted')return;
-if(e.error==='not-allowed'){ss('❌ Mic permission revoked','err');stopMic(p);return;}
-ss('⚠️ '+e.error,'wrn');
+s.rec.onerror=function(ev){
+if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){stopMic(who);return;}
+if(ev.error==='no-speech'||ev.error==='aborted'){
+if(s.listening){setTimeout(()=>{try{s.rec.start();}catch(e){}},300);}
+return;
+}
+stopMic(who);
 };
-
 s.rec.onend=function(){
 if(s.listening&&!window.speechSynthesis.speaking){
 setTimeout(function(){startRec(p);},150);
@@ -1103,12 +1105,14 @@ if(callSt.listening)setTimeout(startCallRec,300);
 }
 };
 
-callSt.rec.onerror=function(e){
-if(e.error==='no-speech'||e.error==='aborted')return;
-if(e.error==='not-allowed'){ss('❌ Mic revoked','err');stopCallMic();return;}
-ss('⚠️ '+e.error,'wrn');
+callSt.rec.onerror=function(ev){
+if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){stopCallMic();return;}
+if(ev.error==='no-speech'||ev.error==='aborted'){
+if(callSt.listening){setTimeout(()=>{try{callSt.rec.start();}catch(e){}},300);}
+return;
+}
+stopCallMic();
 };
-
 callSt.rec.onend=function(){
 if(callSt.listening&&!window.speechSynthesis.speaking){
 setTimeout(startCallRec,150);
@@ -1389,6 +1393,14 @@ ss('Ready — tap 🎙️ to start','');
 }
 setRoomUI('idle');
 })();
+
+// Service Worker registration for PWA (Android install support)
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('/ume2meu/sw.js',{scope:'/ume2meu/'})
+      .catch(function(err){console.warn('SW registration failed:',err);});
+  });
+}
 </script>
 </body>
 </html>
