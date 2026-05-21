@@ -1171,7 +1171,7 @@ if(seen[l.code])return false;seen[l.code]=1;
 return !q||l.name.toLowerCase().indexOf(q.toLowerCase())>=0;
 });
 g.innerHTML=filtered.map(function(l){
-return '<div class="lopt'+(l.code===sel?' sel':'')+'" onclick="pickLang(''+l.code+'')">'+l.flag+' '+l.name+'</div>';
+return '<div class="lopt'+(l.code===sel?' sel':'')+'" onclick="pickLang(\x27'+l.code+'\x27)">'+l.flag+' '+l.name+'<'+'/div>';
 }).join('');
 }
 function pickLang(code){
