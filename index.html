@@ -480,6 +480,7 @@ var SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 var currentMode='face';
 var activePicker=null;
 var history=[];
+var LS_KEYS={langA:'cb_lang_a',langB:'cb_lang_b',callMyL:'cb_call_my',callTheirL:'cb_call_their',history:'cb_history'};
 
 var st={
 A:{lang:LANGS[0],rec:null,stream:null,actx:null,vraf:null,listening:false},
