@@ -196,7 +196,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <div class="logo-sub">REAL-TIME VOICE INTERPRETER</div>
 </div>
 <div class="hdr-btns">
-<button class="hbtn" onclick="showHistory()" title="History" aria-label="Show conversation history">📜</button>
+<button class="hbtn" onclick="showHistory()" title="History" aria-label="Show conversation convHistory">📜</button>
 <button class="hbtn" onclick="clearAll()" title="Clear" aria-label="Clear all conversations">🗑</button>
 </div>
 </header>
@@ -364,12 +364,12 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 
 <!-- HISTORY -->
 <div class="sheet-overlay hidden" id="histSheet" onclick="closeHist(event)">
-<div class="hist-sheet" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Conversation history">
+<div class="hist-sheet" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Conversation convHistory">
 <div class="hist-hd">
 <div class="hist-title">📜 HISTORY</div>
 <div style="display:flex;gap:6px;">
-<button class="xbtn" onclick="exportHistory()" title="Export" aria-label="Export conversation history">⬇</button>
-<button class="xbtn" onclick="closeHist()" aria-label="Close history">✕</button>
+<button class="xbtn" onclick="exportHistory()" title="Export" aria-label="Export conversation convHistory">⬇</button>
+<button class="xbtn" onclick="closeHist()" aria-label="Close convHistory">✕</button>
 </div>
 </div>
 <div class="hlist" id="hlist"><div class="empty-h">No conversation yet</div></div>
@@ -479,7 +479,7 @@ var TTS={
 var SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 var currentMode='face';
 var activePicker=null;
-var history=[];
+var convHistory=[];
 var LS_KEYS={langA:'cb_lang_a',langB:'cb_lang_b',callMyL:'cb_call_my',callTheirL:'cb_call_their',history:'cb_history'};
 
 var st={
@@ -1187,15 +1187,15 @@ ss('Language updated!','ok');
 // ── HISTORY ──
 function addHist(who,orig,trans,targetLang){
 var t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-history.unshift({who:who,orig:orig,trans:trans,tl:targetLang,time:t});
+convHistory.unshift({who:who,orig:orig,trans:trans,tl:targetLang,time:t});
 saveHistory();
 }
 function showHistory(){
 var list=document.getElementById('hlist');
-if(!history.length){
+if(!convHistory.length){
 list.innerHTML='<div class="empty-h">No conversation yet</div>';
 }else{
-list.innerHTML=history.map(function(h){
+list.innerHTML=convHistory.map(function(h){
 return '<div class="hi">'+
 '<div class="hi-who">'+h.who+' → '+(h.tl?h.tl.flag+' '+h.tl.name:'')+'</div>'+
 '<div class="hi-o">'+esc(h.orig)+'</div>'+
@@ -1211,14 +1211,14 @@ if(!e||e.target===document.getElementById('histSheet'))
 document.getElementById('histSheet').classList.add('hidden');
 }
 function exportHistory(){
-if(!history.length){alert('No history to export.');return;}
-var txt=history.map(function(h){
+if(!convHistory.length){alert('No history to export.');return;}
+var txt=convHistory.map(function(h){
 return '['+h.time+'] '+h.who+'\nOriginal: '+h.orig+'\nTranslated: '+h.trans+'\n';
 }).join('\n');
 var blob=new Blob([txt],{type:'text/plain'});
 var a=document.createElement('a');
 a.href=URL.createObjectURL(blob);
-a.download='chatterbox-history-'+new Date().toISOString().slice(0,10)+'.txt';
+a.download='chatterbox-convHistory-'+new Date().toISOString().slice(0,10)+'.txt';
 a.click();
 }
 // ── CLEAR ALL ──
@@ -1232,7 +1232,7 @@ if(callSt.listening)stopCallMic();
 if(peerConn||peer)leaveRoom();
 document.getElementById('callOrig').innerHTML='<span class="mini-ph">Your speech…</span>';
 document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translation…</span>';
-history=[];
+convHistory=[];
 lsClear();
 window.speechSynthesis&&window.speechSynthesis.cancel();
 iEls={A:null,B:null};
@@ -1248,8 +1248,8 @@ function lsSave(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catc
 function lsLoad(key,fallback){try{var raw=localStorage.getItem(key);return raw!==null?JSON.parse(raw):fallback;}catch(e){return fallback;}}
 function lsClear(){try{Object.values(LS_KEYS).forEach(function(k){localStorage.removeItem(k);});}catch(e){}}
 
-function saveHistory(){lsSave(LS_KEYS.history,history.slice(0,200));}
-function loadHistory(){var s=lsLoad(LS_KEYS.history,[]);if(Array.isArray(s)&&s.length>0)history=s;}
+function saveHistory(){lsSave(LS_KEYS.history,convHistory.slice(0,200));}
+function loadHistory(){var s=lsLoad(LS_KEYS.history,[]);if(Array.isArray(s)&&s.length>0)convHistory=s;}
 function saveLangs(){lsSave(LS_KEYS.langA,st.A.lang.code);lsSave(LS_KEYS.langB,st.B.lang.code);}
 function saveCallLangs(){
 var ml=document.getElementById('callMyLang');
@@ -1367,7 +1367,7 @@ if(banner)banner.style.display='none';
 (function(){
 loadLangs();
 loadHistory();
-if(history.length>0)ss('📜 '+history.length+' saved conversations restored','ok');
+if(convHistory.length>0)ss('📜 '+convHistory.length+' saved conversations restored','ok');
 if(window.speechSynthesis){
 window.speechSynthesis.getVoices();
 window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
