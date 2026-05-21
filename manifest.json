@@ -1,27 +1,28 @@
 {
-  "name": "Chatterbox – Voice Interpreter",
-  "short_name": "Chatterbox",
-  "description": "Real-time two-way voice interpreter. No human middleman.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#07090f",
-  "theme_color": "#07090f",
-  "orientation": "portrait-primary",
-  "icons": [
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["utilities", "productivity"],
-  "lang": "en",
-  "dir": "ltr"
+    "name": "Chatterbox – Voice Interpreter",
+    "short_name": "Chatterbox",
+    "description": "Real-time two-way voice interpreter. No human middleman.",
+    "start_url": "/ume2meu/",
+    "scope": "/ume2meu/",
+    "display": "standalone",
+    "background_color": "#07090f",
+    "theme_color": "#07090f",
+    "orientation": "portrait-primary",
+    "icons": [
+          {
+                  "src": "icons/icon-192.png",
+                  "sizes": "192x192",
+                  "type": "image/png",
+                  "purpose": "any maskable"
+          },
+          {
+                  "src": "icons/icon-512.png",
+                  "sizes": "512x512",
+                  "type": "image/png",
+                  "purpose": "any maskable"
+          }
+    ],
+    "categories": ["utilities", "productivity"],
+    "lang": "en",
+    "dir": "ltr"
 }
