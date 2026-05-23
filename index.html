@@ -68,7 +68,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 .bubble.streaming{background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.15);color:var(--text);font-size:13px;animation:pulse-border 1.2s infinite;}
 @keyframes pulse-border{0%,100%{border-color:rgba(0,200,255,0.15);}50%{border-color:rgba(0,200,255,0.4);}}
 .ph{color:#1e3050;font-size:12px;font-style:italic;padding:4px 0;}
-.mic-wrap{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:6px 0 4px;gap:12px;}
+.mic-wrap{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:6px 10px 4px;gap:12px;}
 .mic-outer{position:relative;width:54px;height:54px;display:flex;align-items:center;justify-content:center;}
 .ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,0.08);}
 .mic-outer.on .ring{animation:pr 1.3s ease-out infinite;}
@@ -81,7 +81,9 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 .mic-btn:disabled{opacity:0.3;cursor:not-allowed;}
 .lang-btn{background:var(--card);border:1px solid var(--border2);color:var(--muted);width:34px;height:34px;border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;-webkit-tap-highlight-color:transparent;}
 .lang-btn:hover{border-color:var(--cyan);color:var(--text);}
-.vol-bars{display:flex;align-items:flex-end;gap:2px;height:18px;}
+
+.gender-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:2px 6px;-webkit-tap-highlight-color:transparent;opacity:0.75;transition:opacity 0.2s;flex-shrink:0;}
+.gender-btn:hover,.gender-btn:active{opacity:1;}.vol-bars{display:flex;align-items:flex-end;gap:2px;height:18px;}
 .vb{width:3px;border-radius:2px;background:rgba(0,200,255,0.12);height:3px;transition:height 0.08s,background 0.08s;}
 .divider{position:relative;z-index:20;display:flex;align-items:center;justify-content:center;height:2px;background:var(--border);flex-shrink:0;}
 .swap-pill{position:absolute;background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:3px 12px;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:1px;cursor:pointer;transition:all 0.2s;-webkit-tap-highlight-color:transparent;}
@@ -223,6 +225,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <div class="plang" id="langLblA">🇮🇳 Hindi</div>
 </div>
 <div class="pstatus"><div class="sdot" id="dotA"></div><span id="staA">Idle</span></div>
+<button class="gender-btn" id="genderBtnA" onclick="toggleGender('A')" title="Voice gender">&#x1F468;</button>
 </div>
 <div class="speech-box" id="boxA"><div class="ph">Tap mic to speak…</div></div>
 <div class="mic-wrap">
@@ -253,6 +256,7 @@ header{position:relative;z-index:10;display:flex;align-items:center;justify-cont
 <div class="plang" id="langLblB">🇺🇸 English</div>
 </div>
 <div class="pstatus"><div class="sdot" id="dotB"></div><span id="staB">Idle</span></div>
+<button class="gender-btn" id="genderBtnB" onclick="toggleGender('B')" title="Voice gender">&#x1F469;</button>
 </div>
 <div class="speech-box" id="boxB"><div class="ph">Tap mic to speak…</div></div>
 <div class="mic-wrap">
@@ -483,9 +487,15 @@ var convHistory=[];
 var LS_KEYS={langA:'cb_lang_a',langB:'cb_lang_b',callMyL:'cb_call_my',callTheirL:'cb_call_their',history:'cb_history'};
 
 var st={
-A:{lang:LANGS[0],rec:null,stream:null,actx:null,vraf:null,listening:false},
-B:{lang:LANGS[1],rec:null,stream:null,actx:null,vraf:null,listening:false}
+A:{lang:LANGS[0],rec:null,stream:null,actx:null,vraf:null,listening:false,gender:'male'},
+B:{lang:LANGS[1],rec:null,stream:null,actx:null,vraf:null,listening:false,gender:'female'}
 };
+function toggleGender(p){
+st[p].gender=st[p].gender==='male'?'female':'male';
+var btn=document.getElementById('genderBtn'+p);
+if(btn)btn.textContent=st[p].gender==='male'?'👨':'👩';
+}
+
 
 var callSt={
 myLang:LANGS[0],theirLang:LANGS[1],
@@ -704,19 +714,31 @@ if(_streamTimers[p]){clearTimeout(_streamTimers[p]);_streamTimers[p]=null;}
 if(_streamEls[p]){_streamEls[p].remove();_streamEls[p]=null;}
 }
 // ── TTS ENGINE ──
-function doSpeak(text,langOut,onDone){
+function doSpeak(text,langOut,gender,onDone){
 if(!window.speechSynthesis||!text){if(onDone)onDone();return;}
 var SS=window.speechSynthesis;
 var ttsLang=TTS[langOut]||langOut;
 SS.cancel();
+function pickVoice(voices,pref){
+var lv=voices.filter(function(v){return v.lang===ttsLang;});
+if(!lv.length)lv=voices.filter(function(v){return v.lang.startsWith(ttsLang.split('-')[0]);});
+if(!lv.length)lv=voices.filter(function(v){return v.lang.startsWith('en');});
+if(!lv.length)return null;
+var fKw=['female','woman','girl','fiona','samantha','karen','moira','tessa','veena','zira','heera','hazel','susan'];
+var mKw=['male','man','boy','daniel','alex','tom','fred','lee','ravi','david','george','mark'];
+if(pref==='female'){var fv=lv.find(function(v){var n=v.name.toLowerCase();return fKw.some(function(k){return n.indexOf(k)>=0;});});if(fv)return fv;}
+if(pref==='male'){var mv=lv.find(function(v){var n=v.name.toLowerCase();return mKw.some(function(k){return n.indexOf(k)>=0;});});if(mv)return mv;}
+return lv[0];
+}
 function speak(){
+try{SS.resume();}catch(ex){}
 var voices=SS.getVoices();
-var voice=voices.find(function(v){return v.lang===ttsLang;})||
-voices.find(function(v){return v.lang.startsWith(ttsLang.split('-')[0]);})||
-voices.find(function(v){return v.lang.startsWith('en');});
+var voice=pickVoice(voices,gender);
 var u=new SpeechSynthesisUtterance(text);
 if(voice){u.voice=voice;u.lang=voice.lang;}else{u.lang=ttsLang;}
-u.rate=0.95;u.pitch=1;u.volume=1;
+u.rate=0.9;
+u.pitch=(gender==='female'?1.1:gender==='male'?0.9:1.0);
+u.volume=1;
 u.onend=function(){if(onDone)onDone();};
 u.onerror=function(e){
 if(e.error==='interrupted'||e.error==='canceled'){if(onDone)onDone();return;}
@@ -725,8 +747,8 @@ if(onDone)onDone();
 };
 try{SS.speak(u);}catch(err){if(onDone)onDone();}
 }
-if(SS.getVoices().length>0){speak();}
-else{SS.onvoiceschanged=function(){speak();};setTimeout(speak,500);}
+if(SS.getVoices().length>0){setTimeout(speak,100);}
+else{SS.onvoiceschanged=function(){speak();};setTimeout(speak,600);}
 }
 setInterval(function(){
 if(window.speechSynthesis&&!window.speechSynthesis.speaking)window.speechSynthesis.resume();
@@ -808,7 +830,7 @@ addHist('Person '+p,final,trans,st[other].lang);
 setPanelTTS(other,true);
 ss('🔊 Speaking '+st[other].lang.flag+' '+st[other].lang.name+'…','ok');
 if(s.stream){s.stream.getTracks().forEach(function(tk){tk.stop();});s.stream=null;}
-doSpeak(trans,st[other].lang.out,function(){
+doSpeak(trans,st[other].lang.out,st[p].gender,function(){
 setPanelTTS(other,false);
 ss('✅ Done — Person '+p+' speak again or Person '+other+' respond','ok');
 if(s.listening)setTimeout(function(){startRec(p);},200);
@@ -1026,7 +1048,7 @@ document.getElementById('callOrigHead').textContent='TRANSLATION FOR YOU';
 document.getElementById('callOrig').textContent=data.trans||'';
 var theirLangOut=callSt.theirLang.out;
 ss('🔊 Playing: '+esc(data.trans||''),'ok');
-doSpeak(data.trans||'',theirLangOut,function(){ss('✅ Done — your turn to speak','ok');});
+doSpeak(data.trans||'',theirLangOut,'female',function(){ss('✅ Done — your turn to speak','ok');});
 }
 
 function showSentInPeerPanel(orig,trans){
@@ -1318,7 +1340,7 @@ addBubble(other,trans,'trans');
 addHist('Person '+p,text,trans,st[other].lang);
 setPanelTTS(other,true);
 ss('🔊 Speaking '+st[other].lang.flag+' '+st[other].lang.name+'…','ok');
-doSpeak(trans,st[other].lang.out,function(){
+doSpeak(trans,st[other].lang.out,st[p].gender,function(){
 setPanelTTS(other,false);
 ss('✅ Done — type next message or Person '+other+' responds','ok');
 });
