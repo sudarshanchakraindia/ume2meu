@@ -742,35 +742,36 @@ if(!SR){activateFallback(p);ss('⚠️ Mic not available — text mode active','
 var other=p==='A'?'B':'A';
 if(st[other].listening)stopMic(other);
 window.speechSynthesis&&window.speechSynthesis.cancel();
-ss('🔐 Requesting microphone…','');
+ss('🎤 Starting…','');
 var s=st[p];
-try{
-s.stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-}catch(err){
-if(err.name==='NotAllowedError')ss('❌ Mic blocked — click 🔒 in address bar → Allow','err');
-else if(err.name==='NotFoundError')ss('❌ No microphone found','err');
-else ss('❌ Mic error: '+err.message,'err');
-return;
-}
+s.listening=true;
+setMicUI(p,'listening');
+ss('🎤 Listening…','ok');
+startRec(p);
+// Optional: mic visualizer via AudioContext (non-blocking, Android-safe)
+(function(){
 try{
 s.actx=new(window.AudioContext||window.webkitAudioContext)();
-var an=s.actx.createAnalyser();an.fftSize=64;
-s.actx.createMediaStreamSource(s.stream).connect(an);
+if(s.actx.state==='suspended')s.actx.resume();
+navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(function(stream){
+s.stream=stream;
+var src=s.actx.createMediaStreamSource(stream);
+var an=s.actx.createAnalyser();
+src.connect(an);
 var data=new Uint8Array(an.frequencyBinCount);
 var volId='vol'+p,col=p==='A'?'#00c8ff':'#00ff9d';
-function tick(){
-if(!s.listening){resetVol(volId);return;}
+function draw(){
+if(!s.listening){var el=document.getElementById(volId);if(el)el.style.height='4px';return;}
 an.getByteFrequencyData(data);
-var avg=0;for(var i=0;i<data.length;i++)avg+=data[i];
-setVol(volId,(avg/data.length)*1.4,col);
-s.vraf=requestAnimationFrame(tick);
+var avg=data.reduce(function(a,b){return a+b;},0)/data.length;
+var el=document.getElementById(volId);
+if(el){el.style.height=Math.min(48,4+avg*0.5)+'px';el.style.background=col;}
+s.vraf=requestAnimationFrame(draw);
 }
-tick();
+draw();
+}).catch(function(){});
 }catch(e){}
-s.listening=true;
-setMicUI(p,true);
-ss('✅ Person '+p+' — speak in '+s.lang.flag+' '+s.lang.name,'ok');
-startRec(p);
+}());
 }
 
 function startRec(p){
