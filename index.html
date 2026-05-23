@@ -759,43 +759,41 @@ function toggleMic(p){
 if(st[p].listening)stopMic(p);else startMic(p);
 }
 
-async function startMic(p){
+function startMic(p){
 if(!SR){activateFallback(p);ss('⚠️ Mic not available — text mode active','wrn');return;}
 var other=p==='A'?'B':'A';
 if(st[other].listening)stopMic(other);
 window.speechSynthesis&&window.speechSynthesis.cancel();
-ss('🎤 Starting…','');
+ss('🎙️ Starting…','');
+st[p].listening=true;
 var s=st[p];
-s.listening=true;
 setMicUI(p,'listening');
-ss('🎤 Listening…','ok');
+ss('🎙️ Listening…','ok');
 startRec(p);
-// Optional: mic visualizer via AudioContext (non-blocking, Android-safe)
-(function(){
+setTimeout(function(){
+if(!s.listening)return;
 try{
 s.actx=new(window.AudioContext||window.webkitAudioContext)();
 if(s.actx.state==='suspended')s.actx.resume();
 navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(function(stream){
+if(!s.listening){stream.getTracks().forEach(function(t){t.stop();});return;}
 s.stream=stream;
-var src=s.actx.createMediaStreamSource(stream);
-var an=s.actx.createAnalyser();
-src.connect(an);
+var msrc=s.actx.createMediaStreamSource(stream);
+var an=s.actx.createAnalyser();an.fftSize=256;
+msrc.connect(an);
 var data=new Uint8Array(an.frequencyBinCount);
-var volId='vol'+p,col=p==='A'?'#00c8ff':'#00ff9d';
 function draw(){
-if(!s.listening){var el=document.getElementById(volId);if(el)el.style.height='4px';return;}
+if(!s.listening){cancelAnimationFrame(s.vraf);return;}
 an.getByteFrequencyData(data);
-var avg=data.reduce(function(a,b){return a+b;},0)/data.length;
-var el=document.getElementById(volId);
-if(el){el.style.height=Math.min(48,4+avg*0.5)+'px';el.style.background=col;}
+var avg=0;for(var i=0;i<data.length;i++)avg+=data[i];avg=avg/data.length;
+updateVol('vol'+p,avg);
 s.vraf=requestAnimationFrame(draw);
 }
 draw();
 }).catch(function(){});
 }catch(e){}
-}());
+},2000);
 }
-
 function startRec(p){
 if(!st[p].listening)return;
 var s=st[p];
