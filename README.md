@@ -21,6 +21,11 @@
 | 💾 **Persistent Storage** | Language preferences + history survive page refresh |
 | ♿ **Accessible** | Full ARIA labels, roles, modal semantics for screen readers |
 | 📲 **PWA Installable** | Works offline, installable to home screen on any device |
+| 🔍 **Auto-Detect Language** | 🆕 Tap 🔍 to auto-identify spoken language from speech |
+| 🔇 **Offline TTS Voice Caching** | 🆕 Pre-load voices for offline/fast TTS in Settings ⚙️ |
+| 🔗 **Shared Transcript Links** | 🆕 Generate a shareable URL from conversation history |
+| 🔑 **Custom API Keys** | 🆕 Use your own DeepL or Google Translate key in Settings ⚙️ |
+| 📄 **PDF Export** | 🆕 Export formatted conversation transcript as PDF |
 
 ---
 
@@ -37,7 +42,7 @@
 ```bash
 git clone https://github.com/sudarshanchakraindia/ume2meu.git
 cd ume2meu
-npx serve .        # or: python3 -m http.server 8080
+npx serve . # or: python3 -m http.server 8080
 # open http://localhost:8080
 ```
 
@@ -50,6 +55,8 @@ npx serve .        # or: python3 -m http.server 8080
 3. The live translation streams in real time (⚡ indicator)
 4. When done, the final translation is spoken aloud for Person B
 5. Person B taps their mic (bottom half — already rotated 180°) to respond
+
+**Auto-detect language:** Tap the 🔍 button next to the mic to enable auto language detection. The app will identify what language is being spoken and switch automatically.
 
 ---
 
@@ -69,11 +76,33 @@ Once connected, both people speak in their own languages. Translations are sent 
 
 ---
 
-## 🌊 Live Streaming Translation (New)
+## 🌊 Live Streaming Translation
 
 While you speak, Chatterbox shows a live ⚡ preview of the translation in the other person's panel — updating every 800ms as your speech is recognised. When you finish speaking, the final accurate translation replaces the preview and is spoken aloud.
 
-This reduces the "waiting" feeling during interpretation — the other person can see meaning forming before you've finished your sentence.
+---
+
+## ⚙️ Settings
+
+Tap **⚙️** in the header to access:
+
+- **DeepL API Key** — paste your free or paid DeepL key for higher quality translations
+- **Google Translate API Key** — use your Google Cloud key as a translation provider
+- **Cache TTS Voices Offline** — pre-load voice data so TTS works faster offline
+
+API keys are stored only on your device (localStorage). The free fallback chain always remains active.
+
+---
+
+## 🔗 Share Transcripts
+
+Open 📜 History → tap **🔗** to generate a shareable URL encoding the last 20 conversation entries. Anyone with the link can open it in Chatterbox to view the transcript.
+
+---
+
+## 📄 Export as PDF
+
+Open 📜 History → tap **📄** to open a print-ready formatted transcript in a new tab, then use your browser's Print → Save as PDF.
 
 ---
 
@@ -87,16 +116,24 @@ This reduces the "waiting" feeling during interpretation — the other person ca
 | Firefox | ❌ (no STT) | ✅ | ✅ | ✅ |
 | Samsung Internet | ✅ | ✅ | ✅ | ✅ |
 
+**Safari iOS 16+ mic fix:** The app now requests `getUserMedia` before initialising SpeechRecognition to comply with Safari's stricter media permission model.
+
+**Firefox:** No Web Speech API — text input fallback activates automatically.
+
+**Desktop mic fix:** Microphone is requested immediately on tap (no async delay), fixing the "mic not working" issue on desktop browsers.
+
 ---
 
 ## 🔤 Translation API
 
 Chatterbox uses a free fallback chain — no API key required:
 
-1. **MyMemory** — 1,000 words/day per IP, fastest
-2. **LibreTranslate** (argosopentech.com) — open-source fallback
-3. **LibreTranslate** (terraprint.co) — secondary mirror
-4. **Graceful error** — shows original text if all fail
+1. **DeepL** (if custom key set in ⚙️ Settings)
+2. **Google Translate** (if custom key set in ⚙️ Settings)
+3. **MyMemory** — 1,000 words/day per IP, fastest free option
+4. **LibreTranslate** (argosopentech.com) — open-source fallback
+5. **LibreTranslate** (terraprint.co) — secondary mirror
+6. **Graceful error** — shows original text if all fail
 
 All requests have an 8-second per-call timeout and a 12-second hard watchdog.
 
@@ -106,11 +143,11 @@ All requests have an 8-second per-call timeout and a 12-second hard watchdog.
 
 ```
 ume2meu/
-├── index.html        # Single-file PWA (HTML + CSS + JS, ~62 KB)
-├── manifest.json     # PWA manifest (name, icons, display)
+├── index.html       # Single-file PWA (HTML + CSS + JS, ~79 KB)
+├── manifest.json    # PWA manifest (name, icons, display)
 ├── icons/
-│   ├── icon-192.png  # PWA icon (192×192)
-│   └── icon-512.png  # PWA icon (512×512)
+│   ├── icon-192.png # PWA icon (192×192)
+│   └── icon-512.png # PWA icon (512×512)
 └── README.md
 ```
 
@@ -126,11 +163,11 @@ ume2meu/
 - [x] Translation watchdog timeout
 - [x] Full accessibility (ARIA labels, roles, dialogs)
 - [x] Live streaming translation (real-time partial preview)
-- [ ] Language auto-detection (detect spoken language automatically)
-- [ ] Offline TTS voice caching
-- [ ] Shared transcript link generation
-- [ ] Custom API key support (DeepL / Google Translate)
-- [ ] Conversation export as formatted PDF
+- [x] Language auto-detection (detect spoken language automatically)
+- [x] Offline TTS voice caching
+- [x] Shared transcript link generation
+- [x] Custom API key support (DeepL / Google Translate)
+- [x] Conversation export as formatted PDF
 
 ---
 
