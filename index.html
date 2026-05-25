@@ -947,6 +947,22 @@ setInterval(function(){
 if(window.speechSynthesis&&!window.speechSynthesis.speaking)window.speechSynthesis.resume();
 },5000);
 
+// Mic keepalive: Chrome kills continuous recognition after ~60s of silence.
+// Every 10s, check if any active mic's recognizer seems dead (no activity) and restart it.
+var _lastActivity={A:Date.now(),B:Date.now()};
+setInterval(function(){
+['A','B'].forEach(function(p){
+  if(!st[p].listening||_ttsSpeaking[p])return;
+  var now=Date.now();
+  // If no activity for >55 seconds, force restart the recognizer
+  if(now-_lastActivity[p]>55000){
+    _lastActivity[p]=now;
+    if(st[p].rec){try{st[p].rec.abort();}catch(e){}st[p].rec=null;}
+    setTimeout(function(){if(st[p].listening&&!_ttsSpeaking[p])startRec(p);},200);
+  }
+});
+},10000);
+
 // ── FACE-TO-FACE MIC — TRUE SIMULTANEOUS MODE ──
 // Both A and B mics are ALWAYS ON after first tap.
 // No walkie-talkie: both listen at the same time.
@@ -981,6 +997,7 @@ return;
 s.listening=true;
 setMicUI(p,'listening');
 _pending[p]='';
+_lastActivity[p]=Date.now(); // reset keepalive timer
 
 try{
 s.actx=new(window.AudioContext||window.webkitAudioContext)();
@@ -1019,6 +1036,7 @@ s.rec.interimResults=true;
 s.rec.maxAlternatives=1;
 
 s.rec.onresult=function(e){
+_lastActivity[p]=Date.now(); // track activity for keepalive
 if(_ttsSpeaking[p])return;
 var interim='',newFinal='';
 for(var i=e.resultIndex;i<e.results.length;i++){
@@ -1038,15 +1056,16 @@ if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){
 stopMic(p);ss('❌ Mic permission denied','err');return;
 }
 if(ev.error==='no-speech'||ev.error==='aborted'){
-if(s.listening)setTimeout(function(){if(s.listening)startRec(p);},200);
+if(s.listening&&!_ttsSpeaking[p])setTimeout(function(){if(s.listening&&!_ttsSpeaking[p])startRec(p);},200);
 return;
 }
 if(ev.error==='audio-capture'){ss('❌ Mic capture failed','err');stopMic(p);return;}
-if(s.listening)setTimeout(function(){if(s.listening)startRec(p);},300);
+if(s.listening&&!_ttsSpeaking[p])setTimeout(function(){if(s.listening&&!_ttsSpeaking[p])startRec(p);},300);
 };
 
 s.rec.onend=function(){
-if(s.listening)setTimeout(function(){if(s.listening)startRec(p);},100);
+// Pause restart while TTS is playing; flushPending onDone will restart
+if(s.listening&&!_ttsSpeaking[p])setTimeout(function(){if(s.listening&&!_ttsSpeaking[p])startRec(p);},100);
 };
 
 try{s.rec.start();}catch(e){
@@ -1086,6 +1105,11 @@ _ttsSpeaking[p]=false;
 setPanelTTS(other,false);
 if(st.A.listening&&st.B.listening)ss('🎙️ Both listening — speak anytime','ok');
 else if(st[p].listening)ss('🎙️ Listening…','ok');
+// Restart recognition for person P after TTS finishes (it may have been paused)
+if(st[p].listening){
+  if(st[p].rec){try{st[p].rec.abort();}catch(e){}st[p].rec=null;}
+  setTimeout(function(){if(st[p].listening&&!_ttsSpeaking[p])startRec(p);},150);
+}
 });
 }
 
