@@ -947,10 +947,13 @@ setInterval(function(){
 if(window.speechSynthesis&&!window.speechSynthesis.speaking)window.speechSynthesis.resume();
 },5000);
 
-// ── FACE-TO-FACE MIC (FIXED for Desktop + Safari iOS + Firefox) ──
-// Safari iOS: must call getUserMedia BEFORE creating SpeechRecognition
-// Desktop Chrome: no async delay needed - just init both together  
-// Firefox: no SpeechRecognition API - falls back to text mode
+// ── FACE-TO-FACE MIC — continuous recognition with silence debounce ──
+// HOW IT WORKS:
+//  1. continuous=true: browser keeps the mic open across natural pauses
+//  2. All final results are accumulated in _pending[p] buffer
+//  3. A 1.5s silence timer fires flushPending() — translate the FULL sentence
+//  4. Recognition is paused only during TTS playback (to avoid feedback)
+//  5. Tap mic once to start, tap again to stop — no re-tapping between sentences
 
 function toggleMic(p){
 if(st[p].listening)stopMic(p);else startMic(p);
@@ -965,7 +968,6 @@ window.speechSynthesis&&window.speechSynthesis.cancel();
 var s=st[p];
 ss('🔐 Requesting microphone…','');
 
-// Request microphone access FIRST (required for iOS Safari and good practice on all browsers)
 try{
 s.stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
 }catch(err){
@@ -973,17 +975,14 @@ if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){
 ss('❌ Mic blocked — tap 🔒 in address bar → Allow microphone','err');
 }else if(err.name==='NotFoundError'){
 ss('❌ No microphone found — check device settings','err');
-}else{
-ss('❌ Mic error: '+err.message,'err');
-}
+}else{ss('❌ Mic error: '+err.message,'err');}
 return;
 }
 
 s.listening=true;
 setMicUI(p,'listening');
-ss('🎙️ Listening…','ok');
+ss('🎙️ Listening… speak your full sentence','ok');
 
-// Start volume visualizer using the already-acquired stream
 try{
 s.actx=new(window.AudioContext||window.webkitAudioContext)();
 if(s.actx.state==='suspended')s.actx.resume();
@@ -994,96 +993,81 @@ var data=new Uint8Array(an.frequencyBinCount);
 function draw(){
 if(!s.listening){cancelAnimationFrame(s.vraf);return;}
 an.getByteFrequencyData(data);
-var avg=0;for(var i=0;i<data.length;i++)avg+=data[i];avg=avg/data.length;
+var avg=0;for(var i=0;i<data.length;i++)avg+=data[i];avg/=data.length;
 updateVol('vol'+p,avg);
 s.vraf=requestAnimationFrame(draw);
 }
 draw();
 }catch(e){console.warn('Visualizer error:',e);}
 
+_pending[p]='';
 startRec(p);
 }
+
+// Sentence accumulation buffers
+var _pending={A:'',B:''};
+var _silenceTimer={A:null,B:null};
 
 function startRec(p){
 if(!st[p].listening)return;
 var s=st[p];
 var other=p==='A'?'B':'A';
 
-try{
-s.rec=new SR();
-}catch(e){
+try{s.rec=new SR();}catch(e){
 ss('❌ Speech recognition unavailable','err');
-stopMic(p);
-activateFallback(p);
-return;
+stopMic(p);activateFallback(p);return;
 }
 
-// Use 'auto' lang for auto-detect mode, otherwise use selected language
 s.rec.lang=autoDetect[p]?'':s.lang.code;
-s.rec.continuous=false;
+s.rec.continuous=true;       // ← KEY: keep mic open across pauses
 s.rec.interimResults=true;
 s.rec.maxAlternatives=1;
 
-s.rec.onresult=async function(e){
-var interim='',final='';
+s.rec.onresult=function(e){
+var interim='',newFinal='';
 for(var i=e.resultIndex;i<e.results.length;i++){
-if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+if(e.results[i].isFinal) newFinal+=e.results[i][0].transcript+' ';
 else interim+=e.results[i][0].transcript;
 }
-if(!final&&interim.trim())final=interim.trim();
-if(interim){
-showInterim(p,interim);
-streamTranslate(p,interim,s.lang.out,st[other].lang.out,'box'+other);
-}
-if(final){
-clearInterim(p);
-clearStreamEl(p);
-// Auto-detect language from recognized text
-if(autoDetect[p]){
-await applyDetectedLang(p,final);
-}
-addBubble(p,final,'orig');
-ss('⏳ Translating…','');
-try{s.rec.abort();}catch(ex){}
-var trans=await doTranslateSafe(final,s.lang.out,st[other].lang.out);
-addBubble(other,trans,'trans');
-addHist('Person '+p,final,trans,st[other].lang);
-setPanelTTS(other,true);
-ss('🔊 Speaking '+st[other].lang.flag+' '+st[other].lang.name+'…','ok');
-doSpeak(trans,st[other].lang.out,st[p].gender,function(){
-setPanelTTS(other,false);
-ss('✅ Done — Person '+p+' speak again or Person '+other+' respond','ok');
-if(s.listening)setTimeout(function(){startRec(p);},200);
-});
+
+if(newFinal.trim()) _pending[p]+=newFinal;
+
+// Show live text in speaker's box
+var display=(_pending[p]+interim).trim();
+if(display) showInterim(p,display);
+
+// Live streaming preview in other person's box
+if(display) streamTranslate(p,display,s.lang.out,st[other].lang.out,'box'+other);
+
+// Reset the 1.5s silence debounce timer
+if(_silenceTimer[p])clearTimeout(_silenceTimer[p]);
+if(_pending[p].trim()){
+_silenceTimer[p]=setTimeout(function(){flushPending(p);},1500);
 }
 };
 
 s.rec.onerror=function(ev){
 if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){
-stopMic(p);
-ss('❌ Mic permission denied','err');
-return;
+stopMic(p);ss('❌ Mic permission denied','err');return;
 }
 if(ev.error==='no-speech'||ev.error==='aborted'){
-if(s.listening){setTimeout(function(){try{startRec(p);}catch(e){}},300);}
+// Normal with continuous mode — just restart quietly
+if(s.listening){setTimeout(function(){if(s.listening)startRec(p);},200);}
 return;
 }
 if(ev.error==='audio-capture'){
 ss('❌ Mic capture failed — check browser permissions','err');
-stopMic(p);
-return;
+stopMic(p);return;
 }
-stopMic(p);
+if(s.listening){setTimeout(function(){if(s.listening)startRec(p);},300);}
 };
 
+// onend fires when session ends — restart immediately if still listening
 s.rec.onend=function(){
-if(s.listening&&!window.speechSynthesis.speaking){
-setTimeout(function(){startRec(p);},150);
-}
+if(s.listening){setTimeout(function(){if(s.listening)startRec(p);},100);}
 };
 
 try{s.rec.start();}catch(e){
-// On iOS Safari, SpeechRecognition may need a moment after getUserMedia
 setTimeout(function(){
 try{s.rec.start();}catch(e2){
 ss('❌ Could not start recognition: '+e2.message,'err');
@@ -1093,10 +1077,46 @@ stopMic(p);
 }
 }
 
+async function flushPending(p){
+var text=(_pending[p]||'').trim();
+if(!text)return;
+_pending[p]='';
+if(_silenceTimer[p]){clearTimeout(_silenceTimer[p]);_silenceTimer[p]=null;}
+
+var s=st[p];
+var other=p==='A'?'B':'A';
+
+clearInterim(p);
+clearStreamEl(p);
+
+if(autoDetect[p]) await applyDetectedLang(p,text);
+
+addBubble(p,text,'orig');
+ss('⏳ Translating…','');
+
+// Pause recognition during TTS to avoid feedback
+if(s.rec){try{s.rec.abort();}catch(ex){}s.rec=null;}
+
+var trans=await doTranslateSafe(text,s.lang.out,st[other].lang.out);
+addBubble(other,trans,'trans');
+addHist('Person '+p,text,trans,st[other].lang);
+setPanelTTS(other,true);
+ss('🔊 Speaking '+st[other].lang.flag+' '+st[other].lang.name+'…','ok');
+
+doSpeak(trans,st[other].lang.out,st[p].gender,function(){
+setPanelTTS(other,false);
+ss('🎙️ Listening… speak your next sentence','ok');
+if(s.listening){setTimeout(function(){startRec(p);},200);}
+});
+}
+
 function stopMic(p){
 var s=st[p];
 s.listening=false;
+_pending[p]='';
+if(_silenceTimer[p]){clearTimeout(_silenceTimer[p]);_silenceTimer[p]=null;}
 clearStreamEl(p);
+clearInterim(p);
 if(s.rec){try{s.rec.abort();}catch(e){}s.rec=null;}
 if(s.vraf){cancelAnimationFrame(s.vraf);s.vraf=null;}
 if(s.stream){s.stream.getTracks().forEach(function(t){t.stop();});s.stream=null;}
@@ -1302,7 +1322,7 @@ msg.innerHTML='<div class="pmsg-who">📱 You said</div>'+
 list.appendChild(msg);list.scrollTop=list.scrollHeight;
 }
 
-// ── CALL MODE MIC ──
+// ── CALL MODE MIC — continuous recognition with silence debounce ──
 function toggleCallMic(){
 if(callSt.listening)stopCallMic();else startCallMic();
 }
@@ -1336,68 +1356,89 @@ callSt.listening=true;
 var bm=document.getElementById('bigMic');
 bm.textContent='⏹️';bm.className='big-mic-btn on';
 document.getElementById('bigOuter').classList.add('on');
-document.getElementById('callMicLabel').textContent='LISTENING — TAP TO STOP';
-ss('✅ Speaking '+callSt.myLang.flag+' '+callSt.myLang.name+' → '+callSt.theirLang.flag+' '+callSt.theirLang.name,'ok');
+document.getElementById('callMicLabel').textContent='LISTENING — speak your full sentence';
+ss('✅ '+callSt.myLang.flag+' '+callSt.myLang.name+' → '+callSt.theirLang.flag+' '+callSt.theirLang.name,'ok');
+_callPending='';
 startCallRec();
 }
+
+var _callPending='';
+var _callSilenceTimer=null;
 
 function startCallRec(){
 if(!callSt.listening)return;
 callSt.rec=new SR();
 callSt.rec.lang=callSt.myLang.code;
-callSt.rec.continuous=false;
+callSt.rec.continuous=true;    // ← KEY: keep mic open
 callSt.rec.interimResults=true;
 callSt.rec.maxAlternatives=1;
 
-callSt.rec.onresult=async function(e){
-var interim='',final='';
+callSt.rec.onresult=function(e){
+var interim='',newFinal='';
 for(var i=e.resultIndex;i<e.results.length;i++){
-if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+if(e.results[i].isFinal) newFinal+=e.results[i][0].transcript+' ';
 else interim+=e.results[i][0].transcript;
 }
-if(interim){
-document.getElementById('callOrig').textContent=interim;
-streamTranslate('call',interim,callSt.myLang.out,callSt.theirLang.out,'callTrans');
+if(newFinal.trim()) _callPending+=newFinal;
+
+var display=(_callPending+interim).trim();
+if(display){
+document.getElementById('callOrig').textContent=display;
+streamTranslate('call',display,callSt.myLang.out,callSt.theirLang.out,'callTrans');
 }
-if(final){
-clearStreamEl('call');
-document.getElementById('callOrig').textContent=final;
-document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.name.toUpperCase()+')';
-document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
-document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
-ss('⏳ Translating…','');
-try{callSt.rec.abort();}catch(ex){}
-var trans=await doTranslateSafe(final,callSt.myLang.out,callSt.theirLang.out);
-document.getElementById('callTrans').textContent=trans;
-addHist('Remote (you)',final,trans,callSt.theirLang);
-showSentInPeerPanel(final,trans);
-sendToPeer(final,trans,callSt.myLang.name,callSt.theirLang.name);
-ss('📤 Sent to peer — '+trans,'ok');
-callSt.ttsPlaying=false;
-document.getElementById('callMicLabel').textContent='LISTENING — TAP TO STOP';
-if(callSt.listening)setTimeout(startCallRec,300);
+
+if(_callSilenceTimer)clearTimeout(_callSilenceTimer);
+if(_callPending.trim()){
+_callSilenceTimer=setTimeout(flushCallPending,1500);
 }
 };
 
 callSt.rec.onerror=function(ev){
 if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){stopCallMic();return;}
 if(ev.error==='no-speech'||ev.error==='aborted'){
-if(callSt.listening){setTimeout(function(){try{callSt.rec.start();}catch(e){}},300);}
+if(callSt.listening){setTimeout(function(){if(callSt.listening)startCallRec();},200);}
 return;
 }
-stopCallMic();
+if(callSt.listening){setTimeout(function(){if(callSt.listening)startCallRec();},300);}
 };
+
 callSt.rec.onend=function(){
-if(callSt.listening&&!window.speechSynthesis.speaking){
-setTimeout(startCallRec,150);
-}
+if(callSt.listening){setTimeout(function(){if(callSt.listening)startCallRec();},100);}
 };
 
 try{callSt.rec.start();}catch(e){setTimeout(startCallRec,300);}
 }
 
+async function flushCallPending(){
+var text=_callPending.trim();
+if(!text)return;
+_callPending='';
+if(_callSilenceTimer){clearTimeout(_callSilenceTimer);_callSilenceTimer=null;}
+
+clearStreamEl('call');
+document.getElementById('callOrig').textContent=text;
+document.getElementById('callOrigHead').textContent='YOU SAID ('+callSt.myLang.name.toUpperCase()+')';
+document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translating…</span>';
+document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
+ss('⏳ Translating…','');
+
+if(callSt.rec){try{callSt.rec.abort();}catch(ex){}callSt.rec=null;}
+
+var trans=await doTranslateSafe(text,callSt.myLang.out,callSt.theirLang.out);
+document.getElementById('callTrans').textContent=trans;
+addHist('Remote (you)',text,trans,callSt.theirLang);
+showSentInPeerPanel(text,trans);
+sendToPeer(text,trans,callSt.myLang.name,callSt.theirLang.name);
+ss('📤 Sent — '+trans,'ok');
+
+document.getElementById('callMicLabel').textContent='LISTENING — speak your next sentence';
+if(callSt.listening)setTimeout(startCallRec,300);
+}
+
 function stopCallMic(){
 callSt.listening=false;
+_callPending='';
+if(_callSilenceTimer){clearTimeout(_callSilenceTimer);_callSilenceTimer=null;}
 clearStreamEl('call');
 if(callSt.rec){try{callSt.rec.abort();}catch(e){}callSt.rec=null;}
 if(callSt.vraf){cancelAnimationFrame(callSt.vraf);callSt.vraf=null;}
@@ -1410,6 +1451,7 @@ document.getElementById('bigOuter').classList.remove('on');
 document.getElementById('callMicLabel').textContent='TAP TO SPEAK';
 ss('Stopped.','');
 }
+
 // ── BUBBLES ──
 var iEls={A:null,B:null};
 function showInterim(p,t){
