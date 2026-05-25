@@ -977,47 +977,31 @@ function toggleMic(p){
 if(st[p].listening)stopMic(p);else startMic(p);
 }
 
-async function startMic(p){
+function startMic(p){
 if(!SR){activateFallback(p);ss('⚠️ Mic not available — text mode active','wrn');return;}
 var s=st[p];
 if(s.listening)return;
-
-ss('🔐 Requesting mic for Person '+p+'…','');
-try{
-s.stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-}catch(err){
-if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){
-ss('❌ Mic blocked — tap 🔒 → Allow microphone','err');
-}else if(err.name==='NotFoundError'){
-ss('❌ No microphone found','err');
-}else{ss('❌ Mic error: '+err.message,'err');}
-return;
-}
-
 s.listening=true;
 setMicUI(p,'listening');
 _pending[p]='';
-_lastActivity[p]=Date.now(); // reset keepalive timer
-
-try{
-s.actx=new(window.AudioContext||window.webkitAudioContext)();
-if(s.actx.state==='suspended')s.actx.resume();
-var msrc=s.actx.createMediaStreamSource(s.stream);
-var an=s.actx.createAnalyser();an.fftSize=256;
-msrc.connect(an);
-var vdata=new Uint8Array(an.frequencyBinCount);
-(function draw(){
-if(!s.listening){cancelAnimationFrame(s.vraf);return;}
-an.getByteFrequencyData(vdata);
-var avg=0;for(var i=0;i<vdata.length;i++)avg+=vdata[i];avg/=vdata.length;
-updateVol('vol'+p,avg);
-s.vraf=requestAnimationFrame(draw);
-})();
-}catch(e){}
-
+_lastActivity[p]=Date.now();
 if(st.A.listening&&st.B.listening)ss('🎙️ Both listening — speak anytime','ok');
 else ss('🎙️ Person '+p+' listening — tap other mic too','ok');
 startRec(p);
+var _gDone=false,_gTimer=setTimeout(function(){_gDone=true;},5000);
+navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(function(stream){
+if(_gDone||!s.listening){stream.getTracks().forEach(function(t){t.stop();});return;}
+_gDone=true;clearTimeout(_gTimer);s.stream=stream;
+try{s.actx=new(window.AudioContext||window.webkitAudioContext)();
+if(s.actx.state==='suspended')s.actx.resume();
+var msrc=s.actx.createMediaStreamSource(stream);
+var an=s.actx.createAnalyser();an.fftSize=256;msrc.connect(an);
+var vdata=new Uint8Array(an.frequencyBinCount);
+(function draw(){if(!s.listening){cancelAnimationFrame(s.vraf);return;}
+an.getByteFrequencyData(vdata);var avg=0;
+for(var i=0;i<vdata.length;i++)avg+=vdata[i];avg/=vdata.length;
+updateVol('vol'+p,avg);s.vraf=requestAnimationFrame(draw);})();}catch(e){}
+}).catch(function(){if(!_gDone){_gDone=true;clearTimeout(_gTimer);}});
 }
 
 function startRec(p){
