@@ -954,11 +954,10 @@ setInterval(function(){
 ['A','B'].forEach(function(p){
   if(!st[p].listening||_ttsSpeaking[p])return;
   var now=Date.now();
-  // If no activity for >55 seconds, force restart the recognizer
-  if(now-_lastActivity[p]>55000){
+  // If no activity for >50s, gracefully stop — onend will auto-restart without blackout
+  if(now-_lastActivity[p]>50000){
     _lastActivity[p]=now;
-    if(st[p].rec){try{st[p].rec.abort();}catch(e){}st[p].rec=null;}
-    setTimeout(function(){if(st[p].listening&&!_ttsSpeaking[p])startRec(p);},200);
+    if(st[p].rec){try{st[p].rec.stop();}catch(e){}}
   }
 });
 },10000);
@@ -1021,7 +1020,6 @@ s.rec.maxAlternatives=1;
 
 s.rec.onresult=function(e){
 _lastActivity[p]=Date.now(); // track activity for keepalive
-if(_ttsSpeaking[p])return;
 var interim='',newFinal='';
 for(var i=e.resultIndex;i<e.results.length;i++){
 if(e.results[i].isFinal)newFinal+=e.results[i][0].transcript+' ';
@@ -1030,9 +1028,12 @@ else interim+=e.results[i][0].transcript;
 if(newFinal.trim())_pending[p]+=newFinal;
 var display=(_pending[p]+interim).trim();
 if(display)showInterim(p,display);
+// Don't translate or flush while TTS is playing — just keep buffering speech
+if(_ttsSpeaking[p])return;
 if(display)streamTranslate(p,display,s.lang.out,st[other].lang.out,'box'+other);
 if(_silenceTimer[p])clearTimeout(_silenceTimer[p]);
-if(_pending[p].trim())_silenceTimer[p]=setTimeout(function(){flushPending(p);},1500);
+// Only flush after the engine emits a final result; new interim text cancels pending flush
+if(newFinal.trim())_silenceTimer[p]=setTimeout(function(){flushPending(p);},900);
 };
 
 s.rec.onerror=function(ev){
@@ -1089,10 +1090,10 @@ _ttsSpeaking[p]=false;
 setPanelTTS(other,false);
 if(st.A.listening&&st.B.listening)ss('🎙️ Both listening — speak anytime','ok');
 else if(st[p].listening)ss('🎙️ Listening…','ok');
-// Restart recognition for person P after TTS finishes (it may have been paused)
-if(st[p].listening){
-  if(st[p].rec){try{st[p].rec.abort();}catch(e){}st[p].rec=null;}
-  setTimeout(function(){if(st[p].listening&&!_ttsSpeaking[p])startRec(p);},150);
+// Recognizer was kept alive during TTS; flush any speech captured while TTS played
+if(st[p].listening&&_pending[p].trim()){
+  if(_silenceTimer[p])clearTimeout(_silenceTimer[p]);
+  _silenceTimer[p]=setTimeout(function(){flushPending(p);},400);
 }
 });
 }
@@ -1374,9 +1375,10 @@ document.getElementById('callOrig').textContent=display;
 streamTranslate('call',display,callSt.myLang.out,callSt.theirLang.out,'callTrans');
 }
 
-if(_callSilenceTimer)clearTimeout(_callSilenceTimer);
-if(_callPending.trim()){
-_callSilenceTimer=setTimeout(flushCallPending,1500);
+if(_callSilenceTimer){clearTimeout(_callSilenceTimer);_callSilenceTimer=null;}
+// Only flush after engine signals final; natural pauses no longer end the turn
+if(newFinal.trim()){
+_callSilenceTimer=setTimeout(flushCallPending,900);
 }
 };
 
@@ -1409,8 +1411,7 @@ document.getElementById('callTrans').innerHTML='<span class="mini-ph">Translatin
 document.getElementById('callTransHead').textContent='→ '+callSt.theirLang.name.toUpperCase();
 ss('⏳ Translating…','');
 
-if(callSt.rec){try{callSt.rec.abort();}catch(ex){}callSt.rec=null;}
-
+// Recognizer is kept alive — translation runs in parallel so the mic never goes deaf
 var trans=await doTranslateSafe(text,callSt.myLang.out,callSt.theirLang.out);
 document.getElementById('callTrans').textContent=trans;
 addHist('Remote (you)',text,trans,callSt.theirLang);
@@ -1418,8 +1419,7 @@ showSentInPeerPanel(text,trans);
 sendToPeer(text,trans,callSt.myLang.name,callSt.theirLang.name);
 ss('📤 Sent — '+trans,'ok');
 
-document.getElementById('callMicLabel').textContent='LISTENING — speak your next sentence';
-if(callSt.listening)setTimeout(startCallRec,300);
+document.getElementById('callMicLabel').textContent='LISTENING — speak anytime';
 }
 
 function stopCallMic(){
