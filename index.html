@@ -1031,9 +1031,12 @@ if(display)showInterim(p,display);
 // Don't translate or flush while TTS is playing — just keep buffering speech
 if(_ttsSpeaking[p])return;
 if(display)streamTranslate(p,display,s.lang.out,st[other].lang.out,'box'+other);
+// Sentence-boundary detection: any new audio (interim OR final) re-arms the silence timer.
+// We only flush after ~1.8s of real silence so multi-word sentences are not broken up.
+if(_pending[p].trim()||interim){
 if(_silenceTimer[p])clearTimeout(_silenceTimer[p]);
-// Only flush after the engine emits a final result; new interim text cancels pending flush
-if(newFinal.trim())_silenceTimer[p]=setTimeout(function(){flushPending(p);},900);
+_silenceTimer[p]=setTimeout(function(){if(_pending[p].trim())flushPending(p);},1800);
+}
 };
 
 s.rec.onerror=function(ev){
@@ -1375,10 +1378,11 @@ document.getElementById('callOrig').textContent=display;
 streamTranslate('call',display,callSt.myLang.out,callSt.theirLang.out,'callTrans');
 }
 
-if(_callSilenceTimer){clearTimeout(_callSilenceTimer);_callSilenceTimer=null;}
-// Only flush after engine signals final; natural pauses no longer end the turn
-if(newFinal.trim()){
-_callSilenceTimer=setTimeout(flushCallPending,900);
+// Sentence-boundary detection via real silence: any new audio (interim or final) re-arms the
+// silence timer; we only flush after ~1.8s of no new audio. Prevents word-by-word flushing.
+if(_callPending.trim()||interim){
+if(_callSilenceTimer)clearTimeout(_callSilenceTimer);
+_callSilenceTimer=setTimeout(function(){if(_callPending.trim())flushCallPending();},1800);
 }
 };
 
