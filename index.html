@@ -1020,6 +1020,9 @@ s.rec.maxAlternatives=1;
 
 s.rec.onresult=function(e){
 _lastActivity[p]=Date.now(); // track activity for keepalive
+// Discard mic input from EITHER person while ANY TTS is playing — prevents speaker bleed
+// from re-entering the other mic and creating a feedback loop.
+if(_ttsSpeaking.A||_ttsSpeaking.B){_pending[p]='';clearInterim(p);return;}
 var interim='',newFinal='';
 for(var i=e.resultIndex;i<e.results.length;i++){
 if(e.results[i].isFinal)newFinal+=e.results[i][0].transcript+' ';
@@ -1028,11 +1031,9 @@ else interim+=e.results[i][0].transcript;
 if(newFinal.trim())_pending[p]+=newFinal;
 var display=(_pending[p]+interim).trim();
 if(display)showInterim(p,display);
-// Don't translate or flush while TTS is playing — just keep buffering speech
-if(_ttsSpeaking[p])return;
 if(display)streamTranslate(p,display,s.lang.out,st[other].lang.out,'box'+other);
 // Sentence-boundary detection: any new audio (interim OR final) re-arms the silence timer.
-// We only flush after ~1.8s of real silence so multi-word sentences are not broken up.
+// Flush only after ~1.8s of real silence so multi-word sentences are kept together.
 if(_pending[p].trim()||interim){
 if(_silenceTimer[p])clearTimeout(_silenceTimer[p]);
 _silenceTimer[p]=setTimeout(function(){if(_pending[p].trim())flushPending(p);},1800);
@@ -1093,11 +1094,20 @@ _ttsSpeaking[p]=false;
 setPanelTTS(other,false);
 if(st.A.listening&&st.B.listening)ss('🎙️ Both listening — speak anytime','ok');
 else if(st[p].listening)ss('🎙️ Listening…','ok');
-// Recognizer was kept alive during TTS; flush any speech captured while TTS played
-if(st[p].listening&&_pending[p].trim()){
-  if(_silenceTimer[p])clearTimeout(_silenceTimer[p]);
-  _silenceTimer[p]=setTimeout(function(){flushPending(p);},400);
-}
+// Both mics were gated during TTS — clear stale state on BOTH sides so neither stalls.
+_pending.A='';_pending.B='';
+if(_silenceTimer.A){clearTimeout(_silenceTimer.A);_silenceTimer.A=null;}
+if(_silenceTimer.B){clearTimeout(_silenceTimer.B);_silenceTimer.B=null;}
+clearInterim('A');clearInterim('B');
+// Ensure BOTH recognizers are actually running. onend may have fired during TTS without
+// auto-restart; re-arm explicitly so the other side isn't left deaf.
+['A','B'].forEach(function(q){
+if(!st[q].listening||_ttsSpeaking[q])return;
+var rec=st[q].rec;
+var needRestart=!rec;
+if(rec){try{rec.start();}catch(err){if(!/already|invalid/i.test(err.message||''))needRestart=true;}}
+if(needRestart)setTimeout(function(){if(st[q].listening&&!_ttsSpeaking[q])startRec(q);},120);
+});
 });
 }
 
