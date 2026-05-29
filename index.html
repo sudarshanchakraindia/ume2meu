@@ -1005,49 +1005,58 @@ updateVol('vol'+p,avg);s.vraf=requestAnimationFrame(draw);})();}catch(e){}
 
 // ── How long (ms) of silence after speech counts as "end of sentence" ──
 // Increase if sentences cut off too early; decrease for snappier response.
-var SENTENCE_SILENCE_MS = 1400; // silence after last speech = end of sentence
+var SENTENCE_SILENCE_MS = 1400;
 
 function startRec(p){
   if(!st[p].listening) return;
   var s = st[p];
   var other = p === 'A' ? 'B' : 'A';
 
-  try { s.rec = new SR(); }
+  var rec;
+  try { rec = new SR(); }
   catch(e){ ss('\u274c Speech recognition unavailable','err'); stopMic(p); return; }
 
-  s.rec.lang = autoDetect[p] ? '' : s.lang.code;
-  s.rec.continuous = true;
-  s.rec.interimResults = true;
-  s.rec.maxAlternatives = 1;
+  if(s.rec && s.rec !== rec){
+    try { s.rec.onresult=null; s.rec.onend=null; s.rec.onerror=null; s.rec.abort(); } catch(ex){}
+  }
+  s.rec = rec;
 
-  s._finalBuf = '';
-  s._lastSpeechTs = Date.now();
-  s._processing = false;
-  s._restarting = false;
+  rec.lang = autoDetect[p] ? '' : s.lang.code;
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
 
-  // Clear any previous watchdog
-  if(s._silenceTimer){ clearInterval(s._silenceTimer); s._silenceTimer = null; }
+  if(!s._sessionActive){
+    s._finalBuf    = '';
+    s._lastSpeechTs = Date.now();
+    s._processing  = false;
+  }
+  s._sessionActive = true;
+  s._restarting    = false;
 
-  // Single repeating watchdog — the ONLY thing allowed to finalize a sentence.
-  // Fires every 250 ms; commits once the speaker has been genuinely silent for SENTENCE_SILENCE_MS.
-  s._silenceTimer = setInterval(function(){
-    if(s._processing) return;
-    if(s._finalBuf && (Date.now() - s._lastSpeechTs) >= SENTENCE_SILENCE_MS){
-      commit();
-    }
-  }, 250);
+  if(!s._silenceTimer){
+    s._silenceTimer = setInterval(function(){
+      if(s._processing) return;
+      if(s._finalBuf && (Date.now() - s._lastSpeechTs) >= SENTENCE_SILENCE_MS){
+        commit();
+      }
+    }, 200);
+  }
 
   async function commit(){
     var sentence = (s._finalBuf || '').trim();
     s._finalBuf = '';
     if(!sentence || s._processing) return;
     s._processing = true;
+    s._sessionActive = false;
 
     clearInterim(p);
     clearStreamEl(p);
     if(autoDetect[p]){ try { await applyDetectedLang(p, sentence); } catch(e){} }
     addBubble(p, sentence, 'orig');
     ss('\u23f3 Translating\u2026','');
+
+    try { s.rec.onresult=null; s.rec.onend=null; s.rec.onerror=null; s.rec.abort(); } catch(e){}
 
     var trans = '';
     try { trans = await doTranslateSafe(sentence, s.lang.out, st[other].lang.out); }
@@ -1058,8 +1067,6 @@ function startRec(p){
     setPanelTTS(other, true);
     ss('\ud83d\udd0a Speaking '+st[other].lang.flag+' '+st[other].lang.name+'\u2026','ok');
 
-    try { s.rec.stop(); } catch(e){}
-
     doSpeak(trans, st[other].lang.out, st[p].gender, function(){
       setPanelTTS(other, false);
       ss('\u2705 Done \u2014 Person '+p+' speak again or Person '+other+' respond','ok');
@@ -1069,7 +1076,8 @@ function startRec(p){
   }
   s._commit = commit;
 
-  s.rec.onresult = function(e){
+  rec.onresult = function(e){
+    if(s._processing) return;
     var interim = '', newFinal = '';
     for(var i = e.resultIndex; i < e.results.length; i++){
       var txt = e.results[i][0].transcript;
@@ -1078,9 +1086,7 @@ function startRec(p){
     if(newFinal){
       s._finalBuf = (s._finalBuf + ' ' + newFinal).replace(/\s+/g,' ').trim();
     }
-    // Any speech activity (interim or final) resets the silence clock.
     s._lastSpeechTs = Date.now();
-
     var preview = (s._finalBuf + ' ' + interim).replace(/\s+/g,' ').trim();
     if(preview){
       showInterim(p, preview);
@@ -1088,36 +1094,27 @@ function startRec(p){
     }
   };
 
-  s.rec.onerror = function(ev){
+  rec.onerror = function(ev){
     if(ev.error === 'not-allowed' || ev.error === 'service-not-allowed'){
       stopMic(p); ss('\u274c Mic permission denied','err'); return;
     }
     if(ev.error === 'audio-capture'){
       ss('\u274c Mic capture failed \u2014 check browser permissions','err'); stopMic(p); return;
     }
-    // no-speech, aborted, network, etc: benign — onend will restart.
   };
 
-  // KEY FIX: onend NEVER commits. It only reopens the mic so mid-sentence pauses
-  // don't trigger premature translation. The watchdog timer is the sole committer.
-  s.rec.onend = function(){
-    if(!s.listening || s._processing || s._restarting) return;
-    s._restarting = true;
+  rec.onend = function(){
+    if(!s.listening || s._processing) return;
     setTimeout(function(){
-      s._restarting = false;
-      if(s.listening && !s._processing){
-        try { s.rec.start(); }
-        catch(e){ try { startRec(p); } catch(e2){} }
-      }
-    }, 120);
+      if(s.listening && !s._processing){ startRec(p); }
+    }, 100);
   };
 
-  try { s.rec.start(); }
+  try { rec.start(); }
   catch(e){
-    // On iOS Safari, SpeechRecognition may need a moment after getUserMedia
     setTimeout(function(){
-      try { s.rec.start(); }
-      catch(e2){ ss('\u274c Could not start recognition: '+e2.message,'err'); stopMic(p); }
+      try { rec.start(); }
+      catch(e2){ ss('\u274c Could not start: '+e2.message,'err'); stopMic(p); }
     }, 300);
   }
 }
@@ -1126,7 +1123,10 @@ var s=st[p];
 s.listening=false;
 _pending[p]='';
 _ttsSpeaking[p]=false;
-if(_silenceTimer[p]){clearInterval(s._silenceTimer);s._silenceTimer=null;}
+if(s._silenceTimer){clearInterval(s._silenceTimer);s._silenceTimer=null;}
+  s._sessionActive=false;
+  s._finalBuf='';
+  try{if(s.rec){s.rec.onresult=null;s.rec.onend=null;s.rec.onerror=null;}}catch(_e){}
 clearStreamEl(p);clearInterim(p);
 if(s.rec){try{s.rec.abort();}catch(e){}s.rec=null;}
 if(s.vraf){cancelAnimationFrame(s.vraf);s.vraf=null;}
