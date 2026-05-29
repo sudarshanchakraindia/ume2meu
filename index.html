@@ -986,7 +986,7 @@ _pending[p]='';
 _lastActivity[p]=Date.now();
 if(st.A.listening&&st.B.listening)ss('🎙️ Both listening — speak anytime','ok');
 else ss('🎙️ Person '+p+' listening — tap other mic too','ok');
-startRec(p);
+startRec(p){
 var _gDone=false,_gTimer=setTimeout(function(){_gDone=true;},5000);
 navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(function(stream){
 if(_gDone||!s.listening){stream.getTracks().forEach(function(t){t.stop();});return;}
@@ -1003,112 +1003,151 @@ updateVol('vol'+p,avg);s.vraf=requestAnimationFrame(draw);})();}catch(e){}
 }).catch(function(){if(!_gDone){_gDone=true;clearTimeout(_gTimer);}});
 }
 
+// ── How long (ms) of silence after speech counts as "end of sentence" ──
+// Increase if sentences cut off too early; decrease for snappier response.
+var SENTENCE_SILENCE_MS = 1400;
+
 function startRec(p){
-if(!st[p].listening)return;
-var s=st[p];
-var other=p==='A'?'B':'A';
+  if(!st[p].listening) return;
+  var s = st[p];
+  var other = p === 'A' ? 'B' : 'A';
 
-try{s.rec=new SR();}catch(e){
-ss('❌ Speech recognition unavailable','err');
-stopMic(p);activateFallback(p);return;
-}
+  try {
+    s.rec = new SR();
+  } catch(e){
+    ss('❌ Speech recognition unavailable','err');
+    stopMic(p);
+    return;
+  }
 
-s.rec.lang=autoDetect[p]?'':s.lang.code;
-s.rec.continuous=true;
-s.rec.interimResults=true;
-s.rec.maxAlternatives=1;
+  s.rec.lang = autoDetect[p] ? '' : s.lang.code;
+  s.rec.continuous = true;        // FIX: keep listening across natural pauses
+  s.rec.interimResults = true;
+  s.rec.maxAlternatives = 1;
 
-s.rec.onresult=function(e){
-_lastActivity[p]=Date.now(); // track activity for keepalive
-// Discard mic input from EITHER person while ANY TTS is playing — prevents speaker bleed
-// from re-entering the other mic and creating a feedback loop.
-if(_ttsSpeaking.A||_ttsSpeaking.B){_pending[p]='';clearInterim(p);return;}
-var interim='',newFinal='';
-for(var i=e.resultIndex;i<e.results.length;i++){
-if(e.results[i].isFinal)newFinal+=e.results[i][0].transcript+' ';
-else interim+=e.results[i][0].transcript;
-}
-if(newFinal.trim())_pending[p]+=newFinal;
-var display=(_pending[p]+interim).trim();
-if(display)showInterim(p,display);
-if(display)streamTranslate(p,display,s.lang.out,st[other].lang.out,'box'+other);
-// Sentence-boundary detection: any new audio (interim OR final) re-arms the silence timer.
-// Flush only after ~1.8s of real silence so multi-word sentences are kept together.
-if(_pending[p].trim()||interim){
-if(_silenceTimer[p])clearTimeout(_silenceTimer[p]);
-_silenceTimer[p]=setTimeout(function(){if(_pending[p].trim())flushPending(p);},1800);
-}
-};
+  // Per-session accumulator state
+  s._finalBuf = '';
+  s._silenceTimer = null;
+  s._processing = false;
 
-s.rec.onerror=function(ev){
-if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){
-stopMic(p);ss('❌ Mic permission denied','err');return;
-}
-if(ev.error==='no-speech'||ev.error==='aborted'){
-if(s.listening&&!_ttsSpeaking[p])setTimeout(function(){if(s.listening&&!_ttsSpeaking[p])startRec(p);},200);
-return;
-}
-if(ev.error==='audio-capture'){ss('❌ Mic capture failed','err');stopMic(p);return;}
-if(s.listening&&!_ttsSpeaking[p])setTimeout(function(){if(s.listening&&!_ttsSpeaking[p])startRec(p);},300);
-};
+  function clearSilence(){
+    if(s._silenceTimer){ clearTimeout(s._silenceTimer); s._silenceTimer = null; }
+  }
 
-s.rec.onend=function(){
-// Pause restart while TTS is playing; flushPending onDone will restart
-if(s.listening&&!_ttsSpeaking[p])setTimeout(function(){if(s.listening&&!_ttsSpeaking[p])startRec(p);},100);
-};
+  // Commit the full accumulated sentence -> translate + speak (runs once per sentence)
+  async function commit(){
+    clearSilence();
+    var sentence = (s._finalBuf || '').trim();
+    s._finalBuf = '';
+    if(!sentence || s._processing) return;
+    s._processing = true;
 
-try{s.rec.start();}catch(e){
-setTimeout(function(){
-try{s.rec.start();}catch(e2){ss('❌ Could not start: '+e2.message,'err');stopMic(p);}
-},300);
-}
-}
+    clearInterim(p);
+    clearStreamEl(p);
 
-async function flushPending(p){
-var text=(_pending[p]||'').trim();
-if(!text||_ttsSpeaking[p])return;
-_pending[p]='';
-if(_silenceTimer[p]){clearTimeout(_silenceTimer[p]);_silenceTimer[p]=null;}
+    // Auto-detect language from recognized text
+    if(autoDetect[p]){
+      try { await applyDetectedLang(p, sentence); } catch(e){}
+    }
 
-var s=st[p];
-var other=p==='A'?'B':'A';
-clearInterim(p);
-clearStreamEl(p);
-if(autoDetect[p])await applyDetectedLang(p,text);
+    addBubble(p, sentence, 'orig');
+    ss('⏳ Translating…','');
 
-addBubble(p,text,'orig');
-ss('⏳ Translating…','');
+    var trans = '';
+    try {
+      trans = await doTranslateSafe(sentence, s.lang.out, st[other].lang.out);
+    } catch(e){ trans = ''; }
 
-var trans=await doTranslateSafe(text,s.lang.out,st[other].lang.out);
-addBubble(other,trans,'trans');
-addHist('Person '+p,text,trans,st[other].lang);
+    addBubble(other, trans, 'trans');
+    addHist('Person '+p, sentence, trans, st[other].lang);
+    setPanelTTS(other, true);
+    ss('🔊 Speaking '+st[other].lang.flag+' '+st[other].lang.name+'…','ok');
 
-_ttsSpeaking[p]=true;
-_pending[p]='';
-if(_silenceTimer[p]){clearTimeout(_silenceTimer[p]);_silenceTimer[p]=null;}
-setPanelTTS(other,true);
-ss('🔊 '+st[other].lang.flag+' '+st[other].lang.name+' speaking…','ok');
+    // Pause recognition while TTS plays to avoid the mic hearing the output.
+    try { s.rec.stop(); } catch(e){}
 
-doSpeak(trans,st[other].lang.out,st[p].gender,function(){
-_ttsSpeaking[p]=false;
-setPanelTTS(other,false);
-if(st.A.listening&&st.B.listening)ss('🎙️ Both listening — speak anytime','ok');
-else if(st[p].listening)ss('🎙️ Listening…','ok');
-// Both mics were gated during TTS — clear stale state on BOTH sides so neither stalls.
-_pending.A='';_pending.B='';
-if(_silenceTimer.A){clearTimeout(_silenceTimer.A);_silenceTimer.A=null;}
-if(_silenceTimer.B){clearTimeout(_silenceTimer.B);_silenceTimer.B=null;}
-clearInterim('A');clearInterim('B');
-// Ensure BOTH recognizers are actually running. onend may have fired during TTS without
-// auto-restart; re-arm explicitly so the other side isn't left deaf.
-['A','B'].forEach(function(q){
-if(!st[q].listening||_ttsSpeaking[q])return;
-var rec=st[q].rec;
-var needRestart=!rec;
-if(rec){try{rec.start();}catch(err){if(!/already|invalid/i.test(err.message||''))needRestart=true;}}
-if(needRestart)setTimeout(function(){if(st[q].listening&&!_ttsSpeaking[q])startRec(q);},120);
-});
-});
+    doSpeak(trans, st[other].lang.out, st[p].gender, function(){
+      setPanelTTS(other, false);
+      ss('✅ Done — Person '+p+' speak again or Person '+other+' respond','ok');
+      s._processing = false;
+      if(s.listening) setTimeout(function(){ startRec(p); }, 200);
+    });
+  }
+  s._commit = commit;
+
+  s.rec.onresult = function(e){
+    var interim = '';
+    var newFinal = '';
+    for(var i = e.resultIndex; i < e.results.length; i++){
+      var txt = e.results[i][0].transcript;
+      if(e.results[i].isFinal) newFinal += txt;
+      else interim += txt;
+    }
+
+    // Append finalized chunks to the running sentence buffer (don't translate yet)
+    if(newFinal){
+      s._finalBuf = (s._finalBuf + ' ' + newFinal).replace(/\s+/g,' ').trim();
+    }
+
+    // Live preview = committed-so-far + current interim
+    var preview = (s._finalBuf + ' ' + interim).replace(/\s+/g,' ').trim();
+    if(preview){
+      showInterim(p, preview);
+      streamTranslate(p, preview, s.lang.out, st[other].lang.out, 'box'+other);
+    }
+
+    // Restart the silence timer on every speech event. Only when the speaker
+    // has been quiet long enough do we treat it as end-of-sentence and commit.
+    clearSilence();
+    if(s._finalBuf){
+      s._silenceTimer = setTimeout(function(){ commit(); }, SENTENCE_SILENCE_MS);
+    }
+  };
+
+  s.rec.onerror = function(ev){
+    if(ev.error === 'not-allowed' || ev.error === 'service-not-allowed'){
+      stopMic(p);
+      ss('❌ Mic permission denied','err');
+      return;
+    }
+    if(ev.error === 'no-speech' || ev.error === 'aborted'){
+      // benign: onend handles restart
+      return;
+    }
+    if(ev.error === 'audio-capture'){
+      ss('❌ Mic capture failed — check browser permissions','err');
+      stopMic(p);
+      return;
+    }
+    // other errors: let onend restart
+  };
+
+  s.rec.onend = function(){
+    clearSilence();
+    // If recognition ended but speech is still buffered (and we're not already
+    // translating), commit it so nothing is lost.
+    if(s._finalBuf && !s._processing){
+      commit();
+      return;
+    }
+    // Otherwise, if still listening and nothing is speaking, restart the mic.
+    if(s.listening && !s._processing && !(window.speechSynthesis && window.speechSynthesis.speaking)){
+      setTimeout(function(){ startRec(p); }, 150);
+    }
+  };
+
+  try {
+    s.rec.start();
+  } catch(e){
+    // On iOS Safari, SpeechRecognition may need a moment after getUserMedia
+    setTimeout(function(){
+      try { s.rec.start(); }
+      catch(e2){
+        ss('❌ Could not start recognition: '+e2.message,'err');
+        stopMic(p);
+      }
+    }, 300);
+  }
 }
 
 function stopMic(p){
