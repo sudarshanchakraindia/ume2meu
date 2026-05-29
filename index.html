@@ -1007,7 +1007,7 @@ updateVol('vol'+p,avg);s.vraf=requestAnimationFrame(draw);})();}catch(e){}
 // Increase if sentences cut off too early; decrease for snappier response.
 var SENTENCE_SILENCE_MS = 1400;
 
-function startRec(p){
+function startRec(p);
   if(!st[p].listening) return;
   var s = st[p];
   var other = p === 'A' ? 'B' : 'A';
